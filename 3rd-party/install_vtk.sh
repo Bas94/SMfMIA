@@ -63,7 +63,7 @@ then
   cd ${extern_root}
   ( git clone https://github.com/Kitware/VTK.git VTK-7.0.0 ) || error "failed to extract VTK archive"
   cd VTK-7.0.0
-  git checkout 7.0.0
+  git checkout v7.0.0
   cd ${extern_root}
 fi
 
