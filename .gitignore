@@ -35,3 +35,7 @@
 3rd-party/install
 3rd-party/opencv*
 3rd-party/VTK*
+3rd-party/ITK*
+
+# ignore build dir
+build*
