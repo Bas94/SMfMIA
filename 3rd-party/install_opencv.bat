@@ -2,10 +2,11 @@
 setlocal
 
 set project_name=opencv
-set version=3.1.0
+set version=3.3.0
 set file_name=opencv-%version%
 set file_name_contrib=opencv_contrib-%version%
 set build_root=%cd%
+set "build_root=%build_root:\=/%"
 set extern_root=%build_root%
 set export_root=%build_root%/install
 set bits=64

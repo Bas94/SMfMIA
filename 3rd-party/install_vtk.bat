@@ -4,6 +4,7 @@ setlocal
 set project_name=VTK
 set file_name=VTK-7.0.0
 set build_root=%cd%
+set "build_root=%build_root:\=/%"
 set extern_root=%build_root%
 set export_root=%build_root%/install
 set bits=64
@@ -23,7 +24,7 @@ if errorlevel 1 (
   goto :eof 
 )
 cd VTK-7.0.0
-call git checkout 7.0.0
+call git checkout v7.0.0
 if errorlevel 1 (
   rmdir %file_name% /s /q
   goto :eof 
