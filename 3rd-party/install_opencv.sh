@@ -6,7 +6,7 @@ export_root="${build_root}/install"
 architecture="x64_linux"
 build_configuration="Release"
 additional_cmake_options=""
-version="3.1.0"
+version="3.3.0"
 library_name="opencv-$version"
 library_name_contrib="opencv_contrib-$version"
 # disable everything except ? and ?
