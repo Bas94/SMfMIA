@@ -23,6 +23,7 @@ find_package(VTK 7.0 REQUIRED)
 message( STATUS "VTK_USE_FILE = ${VTK_USE_FILE}" )
 include(${VTK_USE_FILE})
 list(APPEND PROJECT_LIBRARIES ${VTK_LIBRARIES})
+message( STATUS "VTK libraries = ${VTK_LIBRARIES}" )
 include_directories(VTK_INCLUDE_DIR)
 
 # add ITK to project
@@ -94,8 +95,10 @@ find_package( OpenCV REQUIRED )
 list(APPEND PROJECT_LIBRARIES ${OpenCV_LIBS})
 include_directories( "${OPENCV_DIR}/include" )
 
-set( SRC_LIST DICOMLoader.cpp )
-set( HDR_LIST DICOMLoader.h )
+set( SRC_LIST DICOMLoaderVTK.cpp
+              myVTKInteractorStyle.cpp )
+set( HDR_LIST DICOMLoaderVTK.h
+              myVTKInteractorStyle.h )
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
