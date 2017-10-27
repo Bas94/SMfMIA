@@ -39,3 +39,9 @@
 
 # ignore build dir
 build*
+/3rd-party
+/3rd-party/ITK
+/3rd-party/VTK
+/3rd-party/opencv_contrib
+/3rd-party/opencv
+
