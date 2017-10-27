@@ -22,6 +22,9 @@ namespace DICOMLoaderVTK
 		vtkSmartPointer<vtkDICOMImageReader> reader =
 			vtkSmartPointer<vtkDICOMImageReader>::New();
 		reader->SetDirectoryName(directory.c_str());
+		
+		// TODO: check if directory contains DICOM Images, but don´t know how...
+		
 		reader->Update();
 
 		vtkSmartPointer<vtkImageData> imageData = reader->GetOutput();
