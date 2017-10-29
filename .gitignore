@@ -44,4 +44,4 @@ build*
 /3rd-party/VTK
 /3rd-party/opencv_contrib
 /3rd-party/opencv
-
+*.user
