@@ -95,9 +95,9 @@ find_package( OpenCV REQUIRED )
 list(APPEND PROJECT_LIBRARIES ${OpenCV_LIBS})
 include_directories( "${OPENCV_DIR}/include" )
 
-set( SRC_LIST DICOMLoaderVTK.cpp
+set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               myVTKInteractorStyle.cpp )
-set( HDR_LIST DICOMLoaderVTK.h
+set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               myVTKInteractorStyle.h )
 
 # create the executable

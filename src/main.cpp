@@ -13,7 +13,7 @@
 #include <shlobj.h>   
 
 #include "myVTKInteractorStyle.h"
-#include "DICOMLoaderVTK.h"
+#include "fileHelpers/DICOMLoaderVTK.h"
 
 // defines which handle read and display of a single DICOM Image or a DICOM Series
 #define ONE_DICOM  false
