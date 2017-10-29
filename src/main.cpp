@@ -25,8 +25,7 @@ void displayImages(vtkSmartPointer<vtkImageData> imageData)
 	// Visualize
 	vtkSmartPointer<vtkImageViewer2> imageViewer =
 		vtkSmartPointer<vtkImageViewer2>::New();
-	imageViewer->SetInputData(imageData);
-	//imageViewer->SetInputConnection(reader->GetOutputPort());		
+    imageViewer->SetInputData(imageData);
 
 	// Creats an interactor
 	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =

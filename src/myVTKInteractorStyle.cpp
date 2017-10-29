@@ -13,7 +13,6 @@ void myVTKInteractorStyle::SetImageViewer(vtkImageViewer2* imageViewer)
 		_MinSlice = imageViewer->GetSliceMin();
 		_MaxSlice = imageViewer->GetSliceMax();
 		_Slice = _MinSlice;
-		cout << "Slicer: Min = " << _MinSlice << ", Max = " << _MaxSlice << std::endl;
 }
 
 void myVTKInteractorStyle::MoveSliceForward() 
@@ -21,7 +20,6 @@ void myVTKInteractorStyle::MoveSliceForward()
 	if (_Slice < _MaxSlice) 
 	{
 		_Slice += 1;
-		cout << "MoveSliceForward::Slice = " << _Slice << std::endl;
 		_ImageViewer->SetSlice(_Slice);
 		_ImageViewer->Render();
 	}
@@ -32,7 +30,6 @@ void myVTKInteractorStyle::MoveSliceBackward()
 	if (_Slice > _MinSlice) 
 	{
 		_Slice -= 1;
-		cout << "MoveSliceBackward::Slice = " << _Slice << std::endl;
 		_ImageViewer->SetSlice(_Slice);
 		_ImageViewer->Render();
 	}
