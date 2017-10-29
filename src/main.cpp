@@ -49,7 +49,7 @@ void displayImages(vtkSmartPointer<vtkImageData> imageData)
 }
 
 // Function that opens a dialoge window to choose a DICOM file
-std::string openfilename(char *filter = "*.dcm", HWND owner = NULL) //"All Files (*.*)\0*.*\0", HWND owner = NULL)
+std::string openFilename(char *filter = "*.dcm", HWND owner = NULL) //"All Files (*.*)\0*.*\0", HWND owner = NULL)
 {	
 	OPENFILENAMEA ofn;
 	char fileName[MAX_PATH] = "";
@@ -69,7 +69,7 @@ std::string openfilename(char *filter = "*.dcm", HWND owner = NULL) //"All Files
 
 // Function to browse the folder with the DICOM Series
 // TODO: set another root folder
-std::string BrowseForFolder(HWND hwnd = NULL, LPCTSTR szCurrent = NULL, LPTSTR szPath = new TCHAR[MAX_PATH])
+std::string openFolder(HWND hwnd = NULL, LPCTSTR szCurrent = NULL, LPTSTR szPath = new TCHAR[MAX_PATH])
 {
 	BROWSEINFO  bi = { 0 };
 	LPITEMIDLIST pidl;
@@ -92,20 +92,20 @@ std::string BrowseForFolder(HWND hwnd = NULL, LPCTSTR szCurrent = NULL, LPTSTR s
 	return szPath;
 }
 
-int main( int argc, char** argv )	
+int main(int argc, char** argv)
 {
 	std::string inputFilename;
 	std::string directory;
 	if (ONE_DICOM)
 	{
-		inputFilename = openfilename();
+        inputFilename = openFilename();
 		vtkSmartPointer<vtkImageData> imageData = DICOMLoaderVTK::loadDICOM(inputFilename);
 		displayImages(imageData);
 	}
 
 	if (SERIES_DICOM)
 	{
-		directory = BrowseForFolder();		
+        directory = openFolder();
 		
 		vtkSmartPointer<vtkImageData> imageData = DICOMLoaderVTK::loadDICOMSeries(directory);
 		displayImages(imageData);
