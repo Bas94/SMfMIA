@@ -17,7 +17,9 @@ namespace FileDialog
 {
 #ifdef SYSTEM_WINDOWS
     // Function that opens a dialoge window to choose a file
-    bool openFilename( std::string filter, std::string defaultPath, std::string & outPath )
+    bool openFilen( std::string const & filterList,
+                    std::string const & defaultPath,
+                    std::string & outPath )
     {
         OPENFILENAMEA ofn;
         char fileName[MAX_PATH] = "";
@@ -54,7 +56,8 @@ namespace FileDialog
 	}
 
     // Function to browse the folder with the DICOM Series
-    bool openFolder( std::string defaultPath, std::string & outPath )
+    bool openFolder( std::string const & defaultPath,
+                     std::string& outPath )
     {
         BROWSEINFO   bi = { 0 };
         LPITEMIDLIST pidl;
@@ -194,9 +197,9 @@ namespace FileDialog
         gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER(dialog), defaultPath );
     }
 
-    bool openFilename( std::string filterList,
-                       std::string defaultPath,
-                       std::string & outPath )
+    bool openFilen( std::string const & filterList,
+                    std::string const & defaultPath,
+                    std::string & outPath )
     {
         GtkWidget *dialog;
         bool result;
@@ -247,7 +250,7 @@ namespace FileDialog
         return result;
     }
 
-    bool openFolder( std::string defaultPath,
+    bool openFolder( std::string const & defaultPath,
                      std::string& outPath )
     {
         GtkWidget *dialog;
@@ -296,26 +299,4 @@ namespace FileDialog
         return result;
     }
 #endif
-
-	bool openDialog(std::string const& rootDir,
-		FileDialogType type,
-		std::string filter,
-		std::string & file)
-	{
-		if (type == FDTFolder)
-		{
-			return openFolder(rootDir, file);
-		}
-		else if (type == FDTFile)
-		{
-			return openFilename( filter, rootDir, file );
-		}
-		else
-		{
-			assert(false && "unknown dialog type");
-			std::cerr << "unknown dialog type" << std::endl;
-			return false;
-		}
-	}
-
 } // namespace FileDialog
