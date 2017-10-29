@@ -17,7 +17,7 @@ namespace FileDialog
 {
 #ifdef SYSTEM_WINDOWS
     // Function that opens a dialoge window to choose a DICOM file
-    std::string openFilename( char *filter = "*.dcm", HWND owner = NULL )
+    std::string openFilename( char const *filter = "*.dcm", HWND owner = NULL )
     {
         OPENFILENAMEA ofn;
         char fileName[MAX_PATH] = "";
@@ -70,13 +70,13 @@ namespace FileDialog
     {
         if( type == FDTFolder )
         {
-            files = openFolder( filter );
-            return !files.empty();
+            file = openFolder();
+            return !file.empty();
         }
         else if( type == FDTFile )
         {
-            files = openFilename( filter );
-            return !files.empty();
+            file = openFilename( filter.c_str() );
+            return !file.empty();
         }
         else
         {
