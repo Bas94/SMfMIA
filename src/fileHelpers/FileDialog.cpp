@@ -17,9 +17,9 @@ namespace FileDialog
 {
 #ifdef SYSTEM_WINDOWS
     // Function that opens a dialoge window to choose a file
-    bool openFilen( std::string const & filterList,
-                    std::string const & defaultPath,
-                    std::string & outPath )
+    bool openFile( std::string const & filterList,
+                   std::string const & defaultPath,
+                   std::string & outPath )
     {
         OPENFILENAMEA ofn;
         char fileName[MAX_PATH] = "";
@@ -28,7 +28,7 @@ namespace FileDialog
         ofn.lStructSize = sizeof(OPENFILENAME);
         ofn.hwndOwner = NULL;
         ofn.lpstrInitialDir = defaultPath.c_str();
-        ofn.lpstrFilter = filter.c_str();
+        ofn.lpstrFilter = filterList.c_str();
         ofn.lpstrFile = fileName;
         ofn.nMaxFile = MAX_PATH;
         ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;  
@@ -82,12 +82,11 @@ namespace FileDialog
 
         pidl = SHBrowseForFolder(&bi);
 
-		std::string result;
 		LPTSTR szPath = new TCHAR[MAX_PATH];
 		if (!SHGetPathFromIDList(pidl, szPath))
 			return false;
 
-		result = std::string(szPath);
+		outPath = std::string(szPath);
 		delete[] szPath;
         
 		CoUninitialize();
