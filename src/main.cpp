@@ -7,13 +7,12 @@
 #include <vtkRenderer.h>
 #include <vtkImageData.h>
 
-#include <windows.h>
 #include <string.h>
-#include <iostream>
-#include <shlobj.h>   
 
 #include "myVTKInteractorStyle.h"
 #include "fileHelpers/DICOMLoaderVTK.h"
+
+#include "fileHelpers/FileDialog.h"
 
 // defines which handle read and display of a single DICOM Image or a DICOM Series
 #define ONE_DICOM  false
@@ -47,64 +46,29 @@ void displayImages(vtkSmartPointer<vtkImageData> imageData)
 	renderWindowInteractor->Start();
 }
 
-// Function that opens a dialoge window to choose a DICOM file
-std::string openFilename(char *filter = "*.dcm", HWND owner = NULL) //"All Files (*.*)\0*.*\0", HWND owner = NULL)
-{	
-	OPENFILENAMEA ofn;
-	char fileName[MAX_PATH] = "";
-	ZeroMemory(&ofn, sizeof(ofn));
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = owner;
-	ofn.lpstrInitialDir = "";
-	ofn.lpstrFilter = filter;
-	ofn.lpstrFile = fileName;
-	ofn.nMaxFile = MAX_PATH;
-	ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;  ofn.lpstrDefExt = "";
-	std::string fileNameStr;
-	if (GetOpenFileNameA(&ofn))
-		fileNameStr = fileName;
-	return fileNameStr;
-}
-
-// Function to browse the folder with the DICOM Series
-// TODO: set another root folder
-std::string openFolder(HWND hwnd = NULL, LPCTSTR szCurrent = NULL, LPTSTR szPath = new TCHAR[MAX_PATH])
-{
-	BROWSEINFO  bi = { 0 };
-	LPITEMIDLIST pidl;
-	TCHAR        szDisplay[MAX_PATH];
-
-	LPVOID pvReserved = NULL;
-	CoInitialize(pvReserved);
-	
-	bi.hwndOwner = hwnd;
-	bi.pszDisplayName = szDisplay;
-	bi.lpszTitle = TEXT("Please choose a folder.");
-	bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;	
-	bi.lParam = (LPARAM)szCurrent;
-
-	pidl = SHBrowseForFolder(&bi);
-
-    SHGetPathFromIDList(pidl, szPath);
-
-	CoUninitialize();
-	return szPath;
-}
-
 int main(int argc, char** argv)
-{
-	std::string inputFilename;
-	std::string directory;
+{	
 	if (ONE_DICOM)
 	{
-        inputFilename = openFilename();
+        std::string inputFilename;
+        if( !FileDialog::openDialog( "", FileDialog::FDTFile, "*.dcm", inputFilename ) )
+        {
+            std::cerr << "No file was selected" << std::endl;
+            return -1;
+        }
+
 		vtkSmartPointer<vtkImageData> imageData = DICOMLoaderVTK::loadDICOM(inputFilename);
 		displayImages(imageData);
 	}
 
 	if (SERIES_DICOM)
 	{
-        directory = openFolder();
+        std::string directory;
+        if( !FileDialog::openDialog( "", FileDialog::FDTFolder, "", directory ) )
+        {
+            std::cerr << "No folder was selected" << std::endl;
+            return -1;
+        }
 		
 		vtkSmartPointer<vtkImageData> imageData = DICOMLoaderVTK::loadDICOMSeries(directory);
 		displayImages(imageData);
