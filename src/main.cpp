@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 	if (ONE_DICOM)
 	{
         std::string inputFilename;
-        if( !FileDialog::openDialog( "", FileDialog::FDTFile, "*.dcm", inputFilename ) )
+        if( !FileDialog::openDialog( "C:\\develop", FileDialog::FDTFile, "*.dcm", inputFilename ) )
         {
             std::cerr << "No file was selected" << std::endl;
             return -1;
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
 	if (SERIES_DICOM)
 	{
         std::string directory;
-        if( !FileDialog::openDialog( "", FileDialog::FDTFolder, "", directory ) )
+        if( !FileDialog::openDialog( "C:\\develop", FileDialog::FDTFolder, "", directory ) )
         {
             std::cerr << "No folder was selected" << std::endl;
             return -1;

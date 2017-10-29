@@ -16,31 +16,45 @@
 namespace FileDialog
 {
 #ifdef SYSTEM_WINDOWS
-    // Function that opens a dialoge window to choose a DICOM file
-    std::string openFilename( char const *filter = "*.dcm", HWND owner = NULL )
+    // Function that opens a dialoge window to choose a file
+    bool openFilename( std::string filter, std::string defaultPath, std::string & outPath )
     {
         OPENFILENAMEA ofn;
         char fileName[MAX_PATH] = "";
         ZeroMemory(&ofn, sizeof(ofn));
 
         ofn.lStructSize = sizeof(OPENFILENAME);
-        ofn.hwndOwner = owner;
-        ofn.lpstrInitialDir = "";
-        ofn.lpstrFilter = filter;
+        ofn.hwndOwner = NULL;
+        ofn.lpstrInitialDir = defaultPath.c_str();
+        ofn.lpstrFilter = filter.c_str();
         ofn.lpstrFile = fileName;
         ofn.nMaxFile = MAX_PATH;
-        ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;  ofn.lpstrDefExt = "";
+        ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;  
+		ofn.lpstrDefExt = "";
 
-        std::string fileNameStr;
-        if (GetOpenFileNameA(&ofn))
-            fileNameStr = fileName;
-
-        return fileNameStr;
+		if(!GetOpenFileNameA(&ofn))
+			return false;
+		
+		outPath = fileName;
+		
+        return true;
     }
 
+	static int CALLBACK browseFolderCallback( HWND hwnd, 
+											  UINT uMsg, 
+											  LPARAM lParam, 
+											  LPARAM lpData )
+	{
+		if (uMsg == BFFM_INITIALIZED)
+		{
+			LPCTSTR path = reinterpret_cast<LPCTSTR>(lpData);
+			::SendMessage(hwnd, BFFM_SETSELECTION, true, (LPARAM)path);
+		}
+		return 0;
+	}
+
     // Function to browse the folder with the DICOM Series
-    // TODO: set another root folder
-    std::string openFolder( HWND hwnd = NULL, LPCTSTR szCurrent = NULL, LPTSTR szPath = new TCHAR[MAX_PATH] )
+    bool openFolder( std::string defaultPath, std::string & outPath )
     {
         BROWSEINFO   bi = { 0 };
         LPITEMIDLIST pidl;
@@ -49,41 +63,33 @@ namespace FileDialog
         LPVOID pvReserved = NULL;
         CoInitialize(pvReserved);
 
-        bi.hwndOwner = hwnd;
+        bi.hwndOwner = NULL;
         bi.pszDisplayName = szDisplay;
         bi.lpszTitle = TEXT("Please choose a folder.");
         bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
-        bi.lParam = (LPARAM)szCurrent;
+		bi.lpfn = browseFolderCallback;
+		if (defaultPath.empty())
+		{
+			bi.lParam = NULL;
+		}
+		else
+		{
+			bi.lParam = (LPARAM)(defaultPath.c_str());
+		}
 
         pidl = SHBrowseForFolder(&bi);
 
-        SHGetPathFromIDList(pidl, szPath);
+		std::string result;
+		LPTSTR szPath = new TCHAR[MAX_PATH];
+		if (!SHGetPathFromIDList(pidl, szPath))
+			return false;
 
-        CoUninitialize();
-        return szPath;
-    }
+		result = std::string(szPath);
+		delete[] szPath;
+        
+		CoUninitialize();
 
-    bool openDialog( std::string const& rootDir,
-                     FileDialogType type,
-                     std::string filter,
-                     std::string & file )
-    {
-        if( type == FDTFolder )
-        {
-            file = openFolder();
-            return !file.empty();
-        }
-        else if( type == FDTFile )
-        {
-            file = openFilename( filter.c_str() );
-            return !file.empty();
-        }
-        else
-        {
-            assert( false && "unknown dialog type" );
-            std::cerr << "unknown dialog type" << std::endl;
-            return false;
-        }
+        return true;
     }
 #endif
 
@@ -289,26 +295,27 @@ namespace FileDialog
 
         return result;
     }
-
-    bool openDialog( std::string const& rootDir,
-                     FileDialogType type,
-                     std::string filter,
-                     std::string & file )
-    {
-        if( type == FDTFolder )
-        {
-            return openFolder( rootDir, file );
-        }
-        else if( type == FDTFile )
-        {
-            return openFilename( filter, rootDir, file );
-        }
-        else
-        {
-            assert( false && "unknown dialog type" );
-            std::cerr << "unknown dialog type" << std::endl;
-            return false;
-        }
-    }
 #endif
+
+	bool openDialog(std::string const& rootDir,
+		FileDialogType type,
+		std::string filter,
+		std::string & file)
+	{
+		if (type == FDTFolder)
+		{
+			return openFolder(rootDir, file);
+		}
+		else if (type == FDTFile)
+		{
+			return openFilename( filter, rootDir, file );
+		}
+		else
+		{
+			assert(false && "unknown dialog type");
+			std::cerr << "unknown dialog type" << std::endl;
+			return false;
+		}
+	}
+
 } // namespace FileDialog
