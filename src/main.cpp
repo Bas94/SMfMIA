@@ -55,19 +55,30 @@ int main(int argc, char** argv)
     std::string directoryData( "" );
     std::string directoryMask( "" );
 
-    // get dataset directory via directory dialog
-    if( !FileDialog::openFolder( "C:\\develop", directoryData ) )
+    if( argc >= 3 )
     {
-        std::cerr << "No folder was selected" << std::endl;
-        return -1;
+        directoryData = std::string( argv[1] );
+        directoryMask = std::string( argv[2] );
+    }
+    else
+    {
+        // get dataset directory via directory dialog
+        if( !FileDialog::openFolder( "C:\\develop", directoryData ) )
+        {
+            std::cerr << "No folder was selected" << std::endl;
+            return -1;
+        }
+
+        // get mask directory via directory dialog
+        if( !FileDialog::openFolder( "C:\\develop", directoryMask ) )
+        {
+            std::cerr << "No folder was selected" << std::endl;
+            return -1;
+        }
     }
 
-    // get mask directory via directory dialog
-    if( !FileDialog::openFolder( "C:\\develop", directoryMask ) )
-    {
-        std::cerr << "No folder was selected" << std::endl;
-        return -1;
-    }
+    std::cout << "open dataset: " << directoryData << std::endl;
+    std::cout << "open mask:    " << directoryMask << std::endl;
 
     // load the dataset
     vtkSmartPointer<vtkImageData> imageData =
