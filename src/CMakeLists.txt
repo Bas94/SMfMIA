@@ -118,10 +118,12 @@ endif( UNIX )
 
 set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               fileHelpers/FileDialog.cpp
-              myVTKInteractorStyle.cpp )
+              myVTKInteractorStyle.cpp
+              SMfMIAImageViewer.cpp )
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
-              myVTKInteractorStyle.h )
+              myVTKInteractorStyle.h
+              SMfMIAImageViewer.h )
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})

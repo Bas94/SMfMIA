@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vtkSmartPointer.h>
-#include <vtkImageViewer2.h>
 #include <vtkDICOMImageReader.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
@@ -10,6 +9,7 @@
 #include <string.h>
 
 #include "myVTKInteractorStyle.h"
+#include "SMfMIAImageViewer.h"
 #include "fileHelpers/DICOMLoaderVTK.h"
 
 #include "fileHelpers/FileDialog.h"
@@ -19,60 +19,64 @@
 #define SERIES_DICOM  true
 
 // Function that display and enable to interact with DICOMs
-void displayImages(vtkSmartPointer<vtkImageData> imageData)
+void displayImages(vtkSmartPointer<vtkImageData> imageData,
+                   vtkSmartPointer<vtkImageData> imageMask )
 {
-	// Visualize
-	vtkSmartPointer<vtkImageViewer2> imageViewer =
-		vtkSmartPointer<vtkImageViewer2>::New();
-    imageViewer->SetInputData(imageData);
+    // Visualize
+    vtkSmartPointer<SMfMIAImageViewer> imageViewer =
+        vtkSmartPointer<SMfMIAImageViewer>::New();
+    imageViewer->SetMask( imageMask );
+    imageViewer->SetInputData( imageData );
 
-	// Creats an interactor
-	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
-		vtkSmartPointer<vtkRenderWindowInteractor>::New();
+    // Creats an interactor
+    vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+        vtkSmartPointer<vtkRenderWindowInteractor>::New();
 
-	// Usage of own InteractionStyle
-	vtkSmartPointer<myVTKInteractorStyle> myInteractorStyle =
-		vtkSmartPointer<myVTKInteractorStyle>::New();
-	myInteractorStyle->SetImageViewer(imageViewer);
+    // Usage of own InteractionStyle
+    vtkSmartPointer<myVTKInteractorStyle> myInteractorStyle =
+        vtkSmartPointer<myVTKInteractorStyle>::New();
+    myInteractorStyle->SetImageViewer(imageViewer);
 
-	imageViewer->SetupInteractor(renderWindowInteractor);
+    imageViewer->SetupInteractor(renderWindowInteractor);
 
-	renderWindowInteractor->SetInteractorStyle(myInteractorStyle);
+    renderWindowInteractor->SetInteractorStyle(myInteractorStyle);
 
-	imageViewer->SetSize(800, 600);
-	imageViewer->Render();
-	imageViewer->GetRenderer()->ResetCamera();
-	imageViewer->Render();
-	renderWindowInteractor->Start();
+    imageViewer->SetSize(800, 600);
+    imageViewer->Render();
+    imageViewer->GetRenderer()->ResetCamera();
+    imageViewer->Render();
+    imageViewer->SetSliceOrientationToXY();
+
+    renderWindowInteractor->Start();
 }
 
 int main(int argc, char** argv)
-{	
-	if (ONE_DICOM)
-	{
-        std::string inputFilename;
-        if( !FileDialog::openFile( "C:\\develop", "*.dcm", inputFilename ) )
-        {
-            std::cerr << "No file was selected" << std::endl;
-            return -1;
-        }
+{
+    std::string directoryData( "" );
+    std::string directoryMask( "" );
 
-		vtkSmartPointer<vtkImageData> imageData = DICOMLoaderVTK::loadDICOM(inputFilename);
-		displayImages(imageData);
-	}
+    // get dataset directory via directory dialog
+    if( !FileDialog::openFolder( "C:\\develop", directoryData ) )
+    {
+        std::cerr << "No folder was selected" << std::endl;
+        return -1;
+    }
 
-	if (SERIES_DICOM)
-	{
-        std::string directory;
-        if( !FileDialog::openFolder( "C:\\develop", directory ) )
-        {
-            std::cerr << "No folder was selected" << std::endl;
-            return -1;
-        }
-		
-		vtkSmartPointer<vtkImageData> imageData = DICOMLoaderVTK::loadDICOMSeries(directory);
-		displayImages(imageData);
-	}
+    // get mask directory via directory dialog
+    if( !FileDialog::openFolder( "C:\\develop", directoryMask ) )
+    {
+        std::cerr << "No folder was selected" << std::endl;
+        return -1;
+    }
+
+    // load the dataset
+    vtkSmartPointer<vtkImageData> imageData =
+            DICOMLoaderVTK::loadDICOMSeries( directoryData );
+    // load mask data
+    vtkSmartPointer<vtkImageData> imageMask =
+            DICOMLoaderVTK::loadDICOMSeries( directoryMask );
+
+    displayImages( imageData, imageMask );
 
     return 0;
 }
