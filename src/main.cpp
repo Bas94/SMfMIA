@@ -14,6 +14,97 @@
 #include "fileHelpers/DICOMLoaderVTK.h"
 #include "fileHelpers/FileDialog.h"
 
+/*!
+ * \brief The ProgramOptions struct holds all the data
+ * given via command line or with file dialogs.
+ * It holds all the filenames which are needed to load
+ * the dataset and all masks which will be shown.
+ */
+struct ProgramOptions
+{
+    // directory to the dataset
+    std::string datasetDirectory;
+    // array of directory paths to mask data
+    std::vector<std::string> maskDirectories;
+};
+
+/*!
+ * \brief parseInput
+ * \param argc and \p argv are the input variable of main function
+ * \param options are the resulting parsed options for this program
+ * \return returns true if parsing was successfull
+ */
+bool parseInput( int argc, char** argv, ProgramOptions & options )
+{
+    // clear all option fields
+    options.datasetDirectory.clear();
+    options.maskDirectories.clear();
+
+    // check if we have some inputs via command line interface
+    if( argc >= 2 )
+    {
+        options.datasetDirectory = std::string( argv[1] );
+        for( int i = 2; i < argc; ++i )
+        {
+            options.maskDirectories.push_back( std::string( argv[i] ) );
+        }
+    }
+    else
+    {
+        // get dataset directory via directory dialog
+        if( !FileDialog::openFolder( "C:\\develop", options.datasetDirectory ) )
+        {
+            std::cerr << "No folder was selected" << std::endl;
+            return false;
+        }
+
+        // ask for mask directories until user aborts
+        bool loadAnotherMask = true;
+        while( loadAnotherMask )
+        {
+            std::string directoryMask;
+            // get mask directory via directory dialog
+            if( !FileDialog::openFolder( "C:\\develop", directoryMask ) )
+            {
+                loadAnotherMask = false;
+            }
+            else
+            {
+                options.maskDirectories.push_back( directoryMask );
+            }
+        }
+    }
+    return true;
+}
+
+/*!
+ * \brief loadData takes directory paths and
+ *        loads the image data behind them
+ * \param options is the ProgramOptions object which holds
+ *        all directories needed to load the data
+ * \param imageData holds the resulting image data of the
+ *        main dataset
+ * \param imageMasks is an array of datasets where every
+ *        dataset holds (hopefully binary) a mask image
+ */
+void loadData( ProgramOptions const & options,
+               vtkSmartPointer<vtkImageData>& imageData,
+               std::vector< vtkSmartPointer<vtkImageData> >& imageMasks )
+{
+    std::cout << "open dataset: " << options.datasetDirectory << std::endl;
+    // load the dataset
+    imageData = DICOMLoaderVTK::loadDICOMSeries( options.datasetDirectory );
+
+    imageMasks.clear();
+    // load mask data for every given path
+    for( size_t i = 0; i < options.maskDirectories.size(); ++i )
+    {
+        std::cout << "open mask:    " << options.maskDirectories[i] << std::endl;
+        vtkSmartPointer<vtkImageData> imageMask =
+                DICOMLoaderVTK::loadDICOMSeries( options.maskDirectories[i] );
+        imageMasks.push_back( imageMask );
+    }
+}
 
 // Function that display and enable to interact with DICOMs
 void displayImages( vtkSmartPointer<vtkImageData> imageData,
@@ -56,56 +147,18 @@ void displayImages( vtkSmartPointer<vtkImageData> imageData,
 
 int main( int argc, char** argv )
 {
-    std::string directoryData( "" );
-    std::vector<std::string> directoryMasks;
+    ProgramOptions options;
 
-    if( argc >= 2 )
+    // parse input and get all directories
+    if( !parseInput( argc, argv, options ) )
     {
-        directoryData = std::string( argv[1] );
-        for( int i = 2; i < argc; ++i )
-        {
-            directoryMasks.push_back( std::string( argv[i] ) );
-        }
-    }
-    else
-    {
-        // get dataset directory via directory dialog
-        if( !FileDialog::openFolder( "C:\\develop", directoryData ) )
-        {
-            std::cerr << "No folder was selected" << std::endl;
-            return -1;
-        }
-
-        bool loadAnotherMask = true;
-        while( loadAnotherMask )
-        {
-            std::string directoryMask;
-            // get mask directory via directory dialog
-            if( !FileDialog::openFolder( "C:\\develop", directoryMask ) )
-            {
-                loadAnotherMask = false;
-            }
-            else
-            {
-                directoryMasks.push_back( directoryMask );
-            }
-        }
+        return false;
     }
 
-    std::cout << "open dataset: " << directoryData << std::endl;
-    // load the dataset
-    vtkSmartPointer<vtkImageData> imageData =
-            DICOMLoaderVTK::loadDICOMSeries( directoryData );
-
-    // load mask data
+    // load the whole data from the given directories
+    vtkSmartPointer<vtkImageData> imageData;
     std::vector< vtkSmartPointer<vtkImageData> > imageMasks;
-    for( size_t i = 0; i < directoryMasks.size(); ++i )
-    {
-        std::cout << "open mask:    " << directoryMasks[i] << std::endl;
-        vtkSmartPointer<vtkImageData> imageMask =
-                DICOMLoaderVTK::loadDICOMSeries( directoryMasks[i] );
-        imageMasks.push_back( imageMask );
-    }
+    loadData( options, imageData, imageMasks );
 
     // display everything
     displayImages( imageData, imageMasks );
