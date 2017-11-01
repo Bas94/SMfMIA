@@ -152,7 +152,7 @@ int main( int argc, char** argv )
     // parse input and get all directories
     if( !parseInput( argc, argv, options ) )
     {
-        return false;
+        return -1;
     }
 
     // load the whole data from the given directories
