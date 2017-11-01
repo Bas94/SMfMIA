@@ -123,7 +123,8 @@ set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
               myVTKInteractorStyle.h
-              SMfMIAImageViewer.h )
+              SMfMIAImageViewer.h
+              ColorTable.h )
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})

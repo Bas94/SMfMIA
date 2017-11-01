@@ -10,23 +10,10 @@
 
 #include "myVTKInteractorStyle.h"
 #include "SMfMIAImageViewer.h"
+#include "ColorTable.h"
 #include "fileHelpers/DICOMLoaderVTK.h"
-
 #include "fileHelpers/FileDialog.h"
 
-// color table with predefined colors
-static int colorTableSize = 9;
-static double colorTable[9][3] = {
-    { 0.3, 0.0, 0.0 }, // red
-    { 0.0, 0.3, 0.0 }, // green
-    { 0.0, 0.0, 0.3 }, // blue
-    { 0.3, 0.3, 0.0 }, // yellow
-    { 0.0, 0.3, 0.3 }, // cyan
-    { 0.3, 0.0, 0.3 }, // violett
-    { 0.3, 0.1, 0.1 }, // brighter red
-    { 0.1, 0.3, 0.1 }, // brighter green
-    { 0.1, 0.1, 0.3 }  // brighter blue
-};
 
 // Function that display and enable to interact with DICOMs
 void displayImages( vtkSmartPointer<vtkImageData> imageData,
