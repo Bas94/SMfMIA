@@ -4,11 +4,11 @@
 #include <vtkTextMapper.h>
 #include <vtkRenderWindowInteractor.h>
 
-class myVTKInteractorStyle : public vtkInteractorStyleImage
+class SMfMIAInteractorStyle : public vtkInteractorStyleImage
 {
 public:
-	static myVTKInteractorStyle* New();
-	vtkTypeMacro(myVTKInteractorStyle, vtkInteractorStyleImage);
+    static SMfMIAInteractorStyle* New();
+    vtkTypeMacro(SMfMIAInteractorStyle, vtkInteractorStyleImage);
 
 protected:
 	vtkImageViewer2* _ImageViewer;

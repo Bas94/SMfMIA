@@ -118,11 +118,11 @@ endif( UNIX )
 
 set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               fileHelpers/FileDialog.cpp
-              myVTKInteractorStyle.cpp
+              SMfMIAInteractorStyle.cpp
               SMfMIAImageViewer.cpp )
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
-              myVTKInteractorStyle.h
+              SMfMIAInteractorStyle.h
               SMfMIAImageViewer.h
               ColorTable.h )
 

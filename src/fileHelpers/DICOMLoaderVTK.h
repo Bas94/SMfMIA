@@ -8,8 +8,6 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 
-#include "myVTKInteractorStyle.h"
-
 namespace DICOMLoaderVTK
 {
     /*!

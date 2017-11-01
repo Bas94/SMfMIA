@@ -1,13 +1,13 @@
-#include "myVTKInteractorStyle.h"
+#include "SMfMIAInteractorStyle.h"
 
 #include <vtkObjectFactory.h>
 //myVTKInteractorStyle* myVTKInteractorStyle::New() {
 //	return new myVTKInteractorStyle;
 //}
 
-vtkStandardNewMacro(myVTKInteractorStyle);
+vtkStandardNewMacro(SMfMIAInteractorStyle);
 
-void myVTKInteractorStyle::SetImageViewer(vtkImageViewer2* imageViewer) 
+void SMfMIAInteractorStyle::SetImageViewer(vtkImageViewer2* imageViewer) 
 {
 		_ImageViewer = imageViewer;
 		_MinSlice = imageViewer->GetSliceMin();
@@ -15,7 +15,7 @@ void myVTKInteractorStyle::SetImageViewer(vtkImageViewer2* imageViewer)
 		_Slice = _MinSlice;
 }
 
-void myVTKInteractorStyle::MoveSliceForward() 
+void SMfMIAInteractorStyle::MoveSliceForward() 
 {
 	if (_Slice < _MaxSlice) 
 	{
@@ -25,7 +25,7 @@ void myVTKInteractorStyle::MoveSliceForward()
 	}
 }
 
-void myVTKInteractorStyle::MoveSliceBackward() 
+void SMfMIAInteractorStyle::MoveSliceBackward() 
 {
 	if (_Slice > _MinSlice) 
 	{
@@ -35,7 +35,7 @@ void myVTKInteractorStyle::MoveSliceBackward()
 	}
 }
 
-void myVTKInteractorStyle::OnKeyDown()
+void SMfMIAInteractorStyle::OnKeyDown()
 {
 	std::string key = this->GetInteractor()->GetKeySym();
 	if (key.compare("Up") == 0) 
@@ -50,7 +50,7 @@ void myVTKInteractorStyle::OnKeyDown()
 	vtkInteractorStyleImage::OnKeyDown();
 }
 
-void myVTKInteractorStyle::OnMouseWheelForward() 
+void SMfMIAInteractorStyle::OnMouseWheelForward() 
 {
 	MoveSliceForward();
 	// don't forward events, otherwise the image will be zoomed 
@@ -58,7 +58,7 @@ void myVTKInteractorStyle::OnMouseWheelForward()
 	// vtkInteractorStyleImage::OnMouseWheelForward();
 }
 
-void myVTKInteractorStyle::OnMouseWheelBackward()
+void SMfMIAInteractorStyle::OnMouseWheelBackward()
 {
 	if (_Slice > _MinSlice) 
 	{

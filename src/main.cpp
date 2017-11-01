@@ -8,7 +8,7 @@
 
 #include <string.h>
 
-#include "myVTKInteractorStyle.h"
+#include "SMfMIAInteractorStyle.h"
 #include "SMfMIAImageViewer.h"
 #include "ColorTable.h"
 #include "fileHelpers/DICOMLoaderVTK.h"
@@ -128,8 +128,8 @@ void displayImages( vtkSmartPointer<vtkImageData> imageData,
         vtkSmartPointer<vtkRenderWindowInteractor>::New();
 
     // Usage of own InteractionStyle
-    vtkSmartPointer<myVTKInteractorStyle> myInteractorStyle =
-        vtkSmartPointer<myVTKInteractorStyle>::New();
+    vtkSmartPointer<SMfMIAInteractorStyle> myInteractorStyle =
+        vtkSmartPointer<SMfMIAInteractorStyle>::New();
     myInteractorStyle->SetImageViewer(imageViewer);
 
     imageViewer->SetupInteractor(renderWindowInteractor);
