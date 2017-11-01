@@ -3,6 +3,7 @@
 
 #include <vtkResliceImageViewer.h>
 #include <vtkSmartPointer.h>
+#include <vector>
 
 class vtkLookupTable;
 class vtkImageMapToColors;
@@ -13,11 +14,11 @@ public:
     static SMfMIAImageViewer *New();
     vtkTypeMacro(SMfMIAImageViewer,vtkResliceImageViewer);
 
-    void SetMask( vtkSmartPointer<vtkImageData> mask,
+    void AddMask( vtkSmartPointer<vtkImageData> mask,
                   double colR = 0.3,
                   double colG = 0.0,
                   double colB = 0.0,
-                  double colAlpha = 0.1 );
+                  double colAlpha = 0.2 );
     virtual void UpdateDisplayExtent();
 
 protected:
@@ -27,11 +28,10 @@ protected:
     virtual void InstallPipeline();
     virtual void UnInstallPipeline();
 
-    vtkSmartPointer<vtkImageActor> m_maskActor;
-    vtkSmartPointer<vtkImageData> m_mask;
-
-    vtkSmartPointer<vtkLookupTable> lookupTable;
-    vtkSmartPointer<vtkImageMapToColors> mapColor;
+    std::vector< vtkSmartPointer<vtkImageData> > Masks;
+    std::vector< vtkSmartPointer<vtkImageActor> > MaskActors;
+    std::vector< vtkSmartPointer<vtkLookupTable> > LookupTables;
+    std::vector< vtkSmartPointer<vtkImageMapToColors> > MapColors;
 };
 
 #endif // SMFMIA_IMAGE_VIEWER

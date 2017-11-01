@@ -14,10 +14,6 @@
 vtkStandardNewMacro(SMfMIAImageViewer);
 
 SMfMIAImageViewer::SMfMIAImageViewer()
-    : lookupTable( vtkSmartPointer<vtkLookupTable>::New() )
-    , mapColor( vtkSmartPointer<vtkImageMapToColors>::New() )
-    , m_maskActor( vtkSmartPointer<vtkImageActor>::New() )
-    , m_mask( NULL )
 {
 }
 
@@ -25,27 +21,45 @@ SMfMIAImageViewer::~SMfMIAImageViewer()
 {
 }
 
-void SMfMIAImageViewer::SetMask( vtkSmartPointer<vtkImageData> mask,
+void SMfMIAImageViewer::AddMask( vtkSmartPointer<vtkImageData> mask,
                                  double colR /*= 0.3*/,
                                  double colG /*= 0.0*/,
                                  double colB /*= 0.0*/,
-                                 double colAlpha /*= 0.1*/ )
+                                 double colAlpha /*= 0.2*/ )
 {
-    m_mask = mask;
+    this->Masks.push_back( mask );
 
     //map input image for use with imageblend
+    vtkSmartPointer<vtkLookupTable> lookupTable =
+            vtkSmartPointer<vtkLookupTable>::New();
+
     lookupTable->SetNumberOfTableValues(2);
     lookupTable->SetRange( mask->GetScalarRange()[0],
                            mask->GetScalarRange()[1] );
     lookupTable->SetTableValue( mask->GetScalarRange()[0], 0.0, 0.0, 0.0, 0.0 ); //label 0 is transparent
     lookupTable->SetTableValue( mask->GetScalarRange()[1], colR, colG, colB, colAlpha ); //label 1 is colored
     lookupTable->Build();
+    this->LookupTables.push_back( lookupTable );
+
+    vtkSmartPointer<vtkImageMapToColors> mapColor =
+            vtkSmartPointer<vtkImageMapToColors>::New();
 
     mapColor->SetLookupTable( lookupTable );
-    mapColor->SetInputData( m_mask );
+    mapColor->SetInputData( mask );
     mapColor->PassAlphaToOutputOn();
+    this->MapColors.push_back( mapColor );
 
-    m_maskActor->SetInputData( mapColor->GetOutput() );
+    vtkSmartPointer<vtkImageActor> maskActor =
+            vtkSmartPointer<vtkImageActor>::New();
+
+    maskActor->SetInputData( mapColor->GetOutput() );
+    maskActor->GetMapper()->SetInputConnection( mapColor->GetOutputPort() );
+    this->MaskActors.push_back( maskActor );
+
+    if( this->Renderer )
+    {
+        this->Renderer->AddViewProp( maskActor );
+    }
 }
 
 void SMfMIAImageViewer::UpdateDisplayExtent()
@@ -53,7 +67,7 @@ void SMfMIAImageViewer::UpdateDisplayExtent()
     this->Superclass::UpdateDisplayExtent();
 
     vtkAlgorithm *input = this->GetInputAlgorithm();
-    if( !input || !this->m_maskActor )
+    if( !input || this->MaskActors.empty() )
     {
         return;
     }
@@ -66,18 +80,27 @@ void SMfMIAImageViewer::UpdateDisplayExtent()
     switch( this->SliceOrientation )
     {
     case vtkImageViewer2::SLICE_ORIENTATION_XY:
-        this->m_maskActor->SetDisplayExtent(
-                    w_ext[0], w_ext[1], w_ext[2], w_ext[3], this->Slice, this->Slice);
+        for( size_t i = 0; i < this->MaskActors.size(); ++i )
+        {
+            this->MaskActors[i]->SetDisplayExtent(
+                        w_ext[0], w_ext[1], w_ext[2], w_ext[3], this->Slice, this->Slice);
+        }
         break;
 
     case vtkImageViewer2::SLICE_ORIENTATION_XZ:
-        this->m_maskActor->SetDisplayExtent(
-                    w_ext[0], w_ext[1], this->Slice, this->Slice, w_ext[4], w_ext[5]);
+        for( size_t i = 0; i < this->MaskActors.size(); ++i )
+        {
+            this->MaskActors[i]->SetDisplayExtent(
+                        w_ext[0], w_ext[1], this->Slice, this->Slice, w_ext[4], w_ext[5]);
+        }
         break;
 
     case vtkImageViewer2::SLICE_ORIENTATION_YZ:
-        this->m_maskActor->SetDisplayExtent(
-                    this->Slice, this->Slice, w_ext[2], w_ext[3], w_ext[4], w_ext[5]);
+        for( size_t i = 0; i < this->MaskActors.size(); ++i )
+        {
+            this->MaskActors[i]->SetDisplayExtent(
+                        this->Slice, this->Slice, w_ext[2], w_ext[3], w_ext[4], w_ext[5]);
+        }
         break;
     }
 }
@@ -86,15 +109,12 @@ void SMfMIAImageViewer::InstallPipeline()
 {
     this->Superclass::InstallPipeline();
 
-    if( this->Renderer && this->m_maskActor )
+    if( this->Renderer && !this->MaskActors.empty() )
     {
-        this->Renderer->AddViewProp( this->m_maskActor );
-    }
-
-    if( this->ImageActor && this->WindowLevel )
-    {
-        this->m_maskActor->GetMapper()->SetInputConnection(
-                    this->mapColor->GetOutputPort());
+        for( size_t i = 0; i < this->MaskActors.size(); ++i )
+        {
+            this->Renderer->AddViewProp( this->MaskActors[i] );
+        }
     }
 }
 
@@ -102,9 +122,12 @@ void SMfMIAImageViewer::UnInstallPipeline()
 {
     this->Superclass::UnInstallPipeline();
 
-    if( this->Renderer && this->m_maskActor )
+    if( this->Renderer && !this->MaskActors.empty() )
     {
-        this->Renderer->RemoveViewProp( this->m_maskActor );
+        for( size_t i = 0; i < this->MaskActors.size(); ++i )
+        {
+            this->Renderer->RemoveViewProp( this->MaskActors[i] );
+        }
     }
 }
 
