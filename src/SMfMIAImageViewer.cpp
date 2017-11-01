@@ -25,7 +25,11 @@ SMfMIAImageViewer::~SMfMIAImageViewer()
 {
 }
 
-void SMfMIAImageViewer::SetMask( vtkSmartPointer<vtkImageData> mask )
+void SMfMIAImageViewer::SetMask( vtkSmartPointer<vtkImageData> mask,
+                                 double colR /*= 0.3*/,
+                                 double colG /*= 0.0*/,
+                                 double colB /*= 0.0*/,
+                                 double colAlpha /*= 0.1*/ )
 {
     m_mask = mask;
 
@@ -34,7 +38,7 @@ void SMfMIAImageViewer::SetMask( vtkSmartPointer<vtkImageData> mask )
     lookupTable->SetRange( mask->GetScalarRange()[0],
                            mask->GetScalarRange()[1] );
     lookupTable->SetTableValue( mask->GetScalarRange()[0], 0.0, 0.0, 0.0, 0.0 ); //label 0 is transparent
-    lookupTable->SetTableValue( mask->GetScalarRange()[1], 0.3, 0.0, 0.0, 0.1 ); //label 1 is opaque and green
+    lookupTable->SetTableValue( mask->GetScalarRange()[1], colR, colG, colB, colAlpha ); //label 1 is colored
     lookupTable->Build();
 
     mapColor->SetLookupTable( lookupTable );
