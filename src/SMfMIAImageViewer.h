@@ -12,7 +12,7 @@ class vtkImageMapToColors;
  * \brief The SMfMIAImageViewer class is a from vtkResliceImageViewer
  * derived class which can display masks as overlay above a gray value dataset
  */
-class VTKINTERACTIONIMAGE_EXPORT SMfMIAImageViewer : public vtkResliceImageViewer
+class SMfMIAImageViewer : public vtkResliceImageViewer
 {
 public:
     // VTK design defined new function
