@@ -13,6 +13,7 @@
 #include "ColorTable.h"
 #include "fileHelpers/DICOMLoaderVTK.h"
 #include "fileHelpers/FileDialog.h"
+#include "Denoising.h"
 
 /*!
  * \brief The ProgramOptions struct holds all the data
@@ -145,6 +146,9 @@ void displayImages( vtkSmartPointer<vtkImageData> imageData,
     renderWindowInteractor->Start();
 }
 
+
+
+
 int main( int argc, char** argv )
 {
     ProgramOptions options;
@@ -159,9 +163,14 @@ int main( int argc, char** argv )
     vtkSmartPointer<vtkImageData> imageData;
     std::vector< vtkSmartPointer<vtkImageData> > imageMasks;
     loadData( options, imageData, imageMasks );
+	
+	// denoising image
+	vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,1,2);
+   
+	// display everything
+    displayImages(imageData, imageMasks );
 
-    // display everything
-    displayImages( imageData, imageMasks );
+	
 
     return 0;
 }
