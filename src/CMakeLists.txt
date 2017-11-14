@@ -119,12 +119,14 @@ endif( UNIX )
 set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               fileHelpers/FileDialog.cpp
               SMfMIAInteractorStyle.cpp
-              SMfMIAImageViewer.cpp )
+              SMfMIAImageViewer.cpp
+			  Denoising.cpp)
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
               SMfMIAInteractorStyle.h
               SMfMIAImageViewer.h
-              ColorTable.h )
+              ColorTable.h
+			  Denoising.h)
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
