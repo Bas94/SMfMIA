@@ -95,10 +95,36 @@ find_package( OpenCV REQUIRED )
 list(APPEND PROJECT_LIBRARIES ${OpenCV_LIBS})
 include_directories( "${OPENCV_DIR}/include" )
 
-set( SRC_LIST DICOMLoaderVTK.cpp
-              myVTKInteractorStyle.cpp )
-set( HDR_LIST DICOMLoaderVTK.h
-              myVTKInteractorStyle.h )
+# do some checks if we are on Windows or Linux,
+# if so then add some definitions, so we can check within the code
+if (WIN32 OR MSVC)
+    add_definitions( -DSYSTEM_WINDOWS )
+elseif( UNIX )
+    add_definitions( -DSYSTEM_LINUX )
+
+    # Use the package PkgConfig to detect GTK+ headers/library files
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK2 REQUIRED gtk+-2.0)
+
+    # Setup CMake to use GTK+, tell the compiler where to look for headers
+    # and to the linker where to look for libraries
+    include_directories(${GTK2_INCLUDE_DIRS})
+    link_directories(${GTK2_LIBRARY_DIRS})
+
+    # Add other flags to the compiler
+    add_definitions(${GTK2_CFLAGS_OTHER})
+    list(APPEND PROJECT_LIBRARIES ${GTK2_LIBRARIES})
+endif( UNIX )
+
+set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
+              fileHelpers/FileDialog.cpp
+              SMfMIAInteractorStyle.cpp
+              SMfMIAImageViewer.cpp )
+set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
+              fileHelpers/FileDialog.h
+              SMfMIAInteractorStyle.h
+              SMfMIAImageViewer.h
+              ColorTable.h )
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
