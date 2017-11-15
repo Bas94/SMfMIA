@@ -33,15 +33,16 @@ namespace Denoising
 		bilateralFilter->SetInput(filter->GetOutput());
 		bilateralFilter->SetDomainSigma(domainSigma);
 		bilateralFilter->SetRangeSigma(rangeSigma);
-		//bilateralFilter->Update();
+		bilateralFilter->Update();
 
 		typedef itk::ImageToVTKImageFilter<ImageType>       ConnectorType;
 		ConnectorType::Pointer connector = ConnectorType::New();
 		
 		connector->SetInput(bilateralFilter->GetOutput());
-		//connector->Update();
+		connector->Update();
 
-		vtkSmartPointer<vtkImageData> smoothedImageData = connector->GetOutput();
+		vtkSmartPointer<vtkImageData> smoothedImageData = vtkSmartPointer<vtkImageData>::New();
+		smoothedImageData->DeepCopy(connector->GetOutput());
 
 		return smoothedImageData;
 	}
