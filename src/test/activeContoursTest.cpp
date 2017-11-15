@@ -7,7 +7,7 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
-#include <vtkActor.h>
+#include <vtkActor2D.h>
 #include <vtkSmartPointer.h>
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
@@ -149,8 +149,8 @@ int main( int argc, char* argv[] )
             vtkSmartPointer<vtkPolyDataMapper2D>::New();
     mapper->SetInputData(polyData);
 
-    vtkSmartPointer<vtkActor> actor =
-            vtkSmartPointer<vtkActor>::New();
+    vtkSmartPointer<vtkActor2D> actor =
+            vtkSmartPointer<vtkActor2D>::New();
     actor->SetMapper(mapper);
 
     // Setup render window, renderer, and interactor
