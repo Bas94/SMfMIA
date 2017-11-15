@@ -20,6 +20,10 @@
 #include <opencv2/core.hpp>
 #include <iostream>
 
+#ifndef M_PI
+#define M_PI		3.14159265358979323846	/* pi */
+#endif // M_PI
+
 namespace
 {
 typedef itk::Image< unsigned char, 2 >    ImageType;
