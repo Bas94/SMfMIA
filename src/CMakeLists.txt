@@ -120,14 +120,19 @@ set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               fileHelpers/FileDialog.cpp
               SMfMIAInteractorStyle.cpp
               SMfMIAImageViewer.cpp
-			  Denoising.cpp)
+              Denoising.cpp
+              ActiveContour.cpp)
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
               SMfMIAInteractorStyle.h
               SMfMIAImageViewer.h
               ColorTable.h
-			  Denoising.h)
+              Denoising.h
+              ActiveContour.h)
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARIES})
+
+add_executable( activeContoursTest test/activeContoursTest.cpp )
+target_link_libraries(activeContoursTest ${PROJECT_LIBRARIES})
