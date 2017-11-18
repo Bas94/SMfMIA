@@ -7,10 +7,10 @@ typedef itk::Image<unsigned char, 2> ImageType;
 
 ActiveContour::ActiveContour()
     : P( cv::Mat1d( 0, 0 ) )
-    , m_alpha( 0.01 )
-    , m_beta( 0.4 )
-    , m_gamma( 0.07 )
-    , m_sigma( 4 )
+    , m_elasticity( 0.01 )
+    , m_stiffness( 0.4 )
+    , m_speed( 0.07 )
+    , m_smoothingSigma( 4 )
     , m_iterations( 10000 )
     , m_minDelta( 1e-8 )
     , m_px( cv::Mat1d( 0, 0 ) )
@@ -32,7 +32,7 @@ void ActiveContour::setImage( vtkImageData *image )
 
     m_gradientImageFilter = itk::GradientRecursiveGaussianImageFilter<FloatImageType, OutputImageType >::New();
     m_gradientImageFilter->SetInput( gradientMagnitudeFilter->GetOutput() );
-    m_gradientImageFilter->SetSigma( m_sigma );
+    m_gradientImageFilter->SetSigma( m_smoothingSigma );
     m_gradientImageFilter->Update();
 
     m_gradientImage = m_gradientImageFilter->GetOutput();
@@ -49,24 +49,24 @@ void ActiveContour::setStartPoints( std::vector<cv::Point2d> points )
     }
 }
 
-void ActiveContour::setAlpha( double alpha )
+void ActiveContour::setElasticity( double alpha )
 {
-    m_alpha = alpha;
+    m_elasticity = alpha;
 }
 
-void ActiveContour::setBeta( double beta )
+void ActiveContour::setStiffness( double beta )
 {
-    m_beta = beta;
+    m_stiffness = beta;
 }
 
-void ActiveContour::setGamma( double gamma )
+void ActiveContour::setIterationSpeed( double gamma )
 {
-    m_gamma = gamma;
+    m_speed = gamma;
 }
 
-void ActiveContour::setSigma( double sigma )
+void ActiveContour::setEdgeSoothingSigma( double sigma )
 {
-    m_sigma = sigma;
+    m_smoothingSigma = sigma;
 }
 
 void ActiveContour::setMaxIterations( unsigned int iterations )
@@ -117,17 +117,17 @@ std::vector<cv::Point2d> ActiveContour::step()
 
 void ActiveContour::iterationStep()
 {
-    cv::Mat1d newX = P * ( m_px + m_gamma * sampleImage( m_px, m_py, 0 ) );
-    cv::Mat1d newY = P * ( m_py + m_gamma * sampleImage( m_px, m_py, 1 ) );
+    cv::Mat1d newX = P * ( m_px + m_speed * sampleImage( m_px, m_py, 0 ) );
+    cv::Mat1d newY = P * ( m_py + m_speed * sampleImage( m_px, m_py, 1 ) );
     m_px = newX;
     m_py = newY;
 }
 
 void ActiveContour::createP()
 {
-    double a = m_gamma*(2*m_alpha+6*m_beta)+1;
-    double b = m_gamma*(-m_alpha-4*m_beta);
-    double c = m_gamma*m_beta;
+    double a = m_speed*(2*m_elasticity+6*m_stiffness)+1;
+    double b = m_speed*(-m_elasticity-4*m_stiffness);
+    double c = m_speed*m_stiffness;
 
     int N = m_px.rows;
     P = cv::Mat1d( N, N, 0.0 );

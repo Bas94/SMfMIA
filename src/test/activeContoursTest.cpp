@@ -151,16 +151,16 @@ int main( int argc, char* argv[] )
 
     //Snake parameters
     int nPoints = 100;
-    double alpha = 0.001;
+    double alpha = 0.01;
     double beta = 0.2;
     double gamma = 0.7;
-    double sigma = 4;
+    double sigma = 10;
     double iterations = 2000;
 
     if( argc > 1 ) nPoints = atoi(argv[1]);
     if( argc > 2 ) alpha = atof(argv[2]);
     if( argc > 3 ) beta = atof(argv[3]);
-    if( argc > 4 )gamma = atof(argv[4]);
+    if( argc > 4 ) gamma = atof(argv[4]);
     if( argc > 5 ) sigma = atof(argv[5]);
     if( argc > 6 ) iterations = atoi(argv[6]);
 
@@ -242,15 +242,16 @@ int main( int argc, char* argv[] )
     renderWindow->Render();
 
     ActiveContour activeContour;
-    activeContour.setAlpha( alpha );
-    activeContour.setBeta( beta );
-    activeContour.setGamma( gamma );
-    activeContour.setSigma( sigma );
+    activeContour.setElasticity( alpha );
+    activeContour.setStiffness( beta );
+    activeContour.setIterationSpeed( gamma );
+    activeContour.setEdgeSoothingSigma( sigma );
     activeContour.setMaxIterations( iterations );
     activeContour.setImage( imageData );
 
     activeContour.setStartPoints( v );
 
+#if 0
     activeContour.init();
     std::cerr << "start iteration" << std::endl;
     for (int i = 0; i < iterations; i++)
@@ -264,6 +265,14 @@ int main( int argc, char* argv[] )
 
     }
     std::cerr << "iteration finished" << std::endl;
+#else
+    activeContour.compute();
+    updatePolydata( polyData, activeContour.step() );
+    polyData->Modified();
+    mapper->Modified();
+    renderer->Modified();
+    renderWindow->Render();
+#endif
 
     renderWindowInteractor->Start();
 

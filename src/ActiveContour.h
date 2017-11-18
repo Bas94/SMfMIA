@@ -9,6 +9,10 @@
 
 class vtkImageData;
 
+/*!
+ * \brief The ActiveContour class
+ */
+
 class ActiveContour
 {
 public:
@@ -17,10 +21,10 @@ public:
     void setImage( vtkImageData* image );
     void setStartPoints( std::vector<cv::Point2d> points );
 
-    void setAlpha( double alpha );
-    void setBeta( double beta );
-    void setGamma( double gamma );
-    void setSigma( double sigma );
+    void setElasticity( double alpha );
+    void setStiffness( double beta );
+    void setIterationSpeed( double gamma );
+    void setEdgeSoothingSigma( double sigma );
 
     void setMaxIterations( unsigned int iterations );
     void setMinChangeDelta( double minDelta );
@@ -44,10 +48,10 @@ protected:
 
     cv::Mat1d P;
 
-    double m_alpha;
-    double m_beta;
-    double m_gamma;
-    double m_sigma;
+    double m_elasticity;
+    double m_stiffness;
+    double m_speed;
+    double m_smoothingSigma;
     double m_minDelta;
 
     unsigned int m_iterations;
