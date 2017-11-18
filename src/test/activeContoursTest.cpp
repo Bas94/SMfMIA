@@ -16,6 +16,10 @@
 #include <vtkPolyLine.h>
 #include <vtkPolyData.h>
 #include <vtkPolyDataMapper2D.h>
+#include <vtkProperty2D.h>
+#include <vtkDataSetMapper.h>
+#include <vtkImageMapper.h>
+#include <itkImageToVTKImageFilter.h>
 
 #include <opencv2/core.hpp>
 #include <iostream>
@@ -49,15 +53,15 @@ vtkSmartPointer<vtkPolyData> createPolydataLine( cv::Mat1d const & v )
     // Create a vtkPoints object and store the points in it
     vtkSmartPointer<vtkPoints> points =
             vtkSmartPointer<vtkPoints>::New();
-    for( int i = 0; i < v.rows; ++i )
+    for( int i = 0; i < v.rows/2; ++i )
     {
         points->InsertNextPoint( v(2*i+0), v(2*i+1), 0 );
     }
 
     vtkSmartPointer<vtkPolyLine> polyLine =
             vtkSmartPointer<vtkPolyLine>::New();
-    polyLine->GetPointIds()->SetNumberOfIds(v.rows);
-    for(unsigned int i = 0; i < v.rows; i++)
+    polyLine->GetPointIds()->SetNumberOfIds(v.rows/2);
+    for(unsigned int i = 0; i < v.rows/2; i++)
     {
         polyLine->GetPointIds()->SetId(i,i);
     }
@@ -78,6 +82,16 @@ vtkSmartPointer<vtkPolyData> createPolydataLine( cv::Mat1d const & v )
     polyData->SetLines(cells);
 
     return polyData;
+}
+
+void updatePolydata( vtkSmartPointer<vtkPolyData> polyData, cv::Mat1d const & x, cv::Mat1d const & y )
+{
+    vtkSmartPointer<vtkPoints> points = polyData->GetPoints();
+    for( int i = 0; i < x.rows; ++i )
+    {
+        points->SetPoint( i, x(i), y(i), 0 );
+    }
+    polyData->SetPoints( points );
 }
 
 int main( int argc, char* argv[] )
@@ -152,6 +166,26 @@ int main( int argc, char* argv[] )
     vtkSmartPointer<vtkActor2D> actor =
             vtkSmartPointer<vtkActor2D>::New();
     actor->SetMapper(mapper);
+    actor->GetProperty()->SetColor( 1.0, 0.0, 0.0 );
+    actor->GetProperty()->SetLineWidth( 3 );
+
+
+    typedef itk::ImageToVTKImageFilter<ImageType>       ConnectorType;
+    ConnectorType::Pointer connector = ConnectorType::New();
+
+    connector->SetInput(image);
+    connector->Update();
+
+    vtkSmartPointer<vtkImageData> imageData = vtkSmartPointer<vtkImageData>::New();
+    imageData->DeepCopy(connector->GetOutput());
+    vtkSmartPointer<vtkImageMapper> imageMapper =
+        vtkSmartPointer<vtkImageMapper>::New();
+    imageMapper->SetColorLevel(225);
+    imageMapper->SetColorWindow( 100 );
+      imageMapper->SetInputData( imageData );
+      vtkSmartPointer<vtkActor2D> imageActor =
+        vtkSmartPointer<vtkActor2D>::New();
+      imageActor->SetMapper(imageMapper);
 
     // Setup render window, renderer, and interactor
     vtkSmartPointer<vtkRenderer> renderer =
@@ -162,6 +196,7 @@ int main( int argc, char* argv[] )
     vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
             vtkSmartPointer<vtkRenderWindowInteractor>::New();
     renderWindowInteractor->SetRenderWindow(renderWindow);
+    renderer->AddActor(imageActor);
     renderer->AddActor(actor);
 
     renderWindow->Render();
@@ -199,26 +234,23 @@ int main( int argc, char* argv[] )
     {
         x(i) = v(2*i);
         y(i) = v(2*i+1);
-        std::cout << "(" << x(i) << ", " << y(i) << ")" << std::endl;
     }
 
     for (int i = 0; i < iterations; i++)
     {
-
         x = (x+gamma*sampleImage(x, y, gradientFilter->GetOutput(), 0));
         x = (x.t() * P).t();
         y = (y+gamma*sampleImage(x, y, gradientFilter->GetOutput(), 1));
-        y = ( y.t() * P ).t();
-    }
+        y = (y.t() * P).t();
 
-    //Display the answer
-    std::cout << "Final snake after " << iterations << " iterations" << std::endl;
-    cv::Mat1d v2(2*N,1);
-    for (int i=0; i<N; i++)
-    {
-        v2(2*i) = x(i);
-        v2(2*i+1) = y(i);
-        std::cout << "(" << x(i) << ", " << y(i) << ")" << std::endl;
+        std::cout << "(" << x(0) << ", " << y(0) << ")" << std::endl;
+        updatePolydata( polyData, x, y );
+        polyData->Modified();
+        mapper->Modified();
+        renderer->Modified();
+        if( i % 10 == 0 )
+            renderWindow->Render();
+
     }
 
     return EXIT_SUCCESS;;
@@ -230,7 +262,7 @@ cv::Mat1d generateCircle( double cx, double cy, double rx, double ry, int n)
 
     for (int i=0; i<n; i++)
     {
-        v(2*i) = cx + rx*cos(2*M_PI*i/n);
+        v(2*i+0) = cx + rx*cos(2*M_PI*i/n);
         v(2*i+1) = cy + ry*sin(2*M_PI*i/n);
     }
     v(2*n)=v(0);
