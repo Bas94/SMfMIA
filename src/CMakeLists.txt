@@ -134,5 +134,5 @@ set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARIES})
 
-add_executable( activeContoursTest test/activeContoursTest.cpp )
+add_executable( activeContoursTest test/activeContoursTest.cpp ActiveContour.cpp ActiveContour.h )
 target_link_libraries(activeContoursTest ${PROJECT_LIBRARIES})
