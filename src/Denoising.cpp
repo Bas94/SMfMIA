@@ -3,14 +3,17 @@
 #include <itkBilateralImageFilter.h>
 #include <itkVTKImageToImageFilter.h>
 #include <itkImageToVTKImageFilter.h>
+#include <itkSmartPointer.h>
+
+#include "Converter.h"
 
 namespace Denoising 
 {
 	
 	vtkSmartPointer<vtkImageData> bilateralFilter(vtkSmartPointer<vtkImageData> imageData, double domainSigma, double rangeSigma)
 	{
-		// Setup types
-		const unsigned int Dimension = 3;
+		//// Setup types
+		//const unsigned int Dimension = 3;
 
 		typedef short PixelType;
 		typedef itk::Image< PixelType, Dimension > ImageType;
@@ -27,10 +30,12 @@ namespace Denoising
 		{
 			std::cerr << "Error: " << error << std::endl;			
 		}
+		itk::VTKImageToImageFilter< ImageType >::Pointer  itkImage = ConvertVTKToITK(imageData);
+		itk::Image<PixelType, Dimension>* itkImage2 = filter->GetOutput();
 
 		typedef itk::BilateralImageFilter<ImageType, ImageType >	BilateralFilterType;
 		BilateralFilterType::Pointer bilateralFilter = BilateralFilterType::New();
-		bilateralFilter->SetInput(filter->GetOutput());
+		bilateralFilter->SetInput(itkImage2);
 		bilateralFilter->SetDomainSigma(domainSigma);
 		bilateralFilter->SetRangeSigma(rangeSigma);
 		bilateralFilter->Update();

@@ -121,14 +121,16 @@ set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               SMfMIAInteractorStyle.cpp
               SMfMIAImageViewer.cpp
               Denoising.cpp
-              ActiveContour.cpp)
+              ActiveContour.cpp
+			  Helpers/Converter.cpp)
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
               SMfMIAInteractorStyle.h
               SMfMIAImageViewer.h
               ColorTable.h
               Denoising.h
-              ActiveContour.h)
+              ActiveContour.h
+			  Helpers/Converter.h)
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
