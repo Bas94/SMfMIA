@@ -12,11 +12,14 @@ ActiveContour::ActiveContour()
     , m_speed( 0.07 )
     , m_smoothingSigma( 4 )
     , m_iterations( 10000 )
-    , m_minDelta( 1e-8 )
     , m_px( cv::Mat1d( 0, 0 ) )
     , m_py( cv::Mat1d( 0, 0 ) )
 {
 
+}
+
+ActiveContour::~ActiveContour()
+{
 }
 
 void ActiveContour::setImage( vtkImageData *image )
@@ -72,11 +75,6 @@ void ActiveContour::setEdgeSoothingSigma( double sigma )
 void ActiveContour::setMaxIterations( unsigned int iterations )
 {
     m_iterations = iterations;
-}
-
-void ActiveContour::setMinChangeDelta( double minDelta )
-{
-    m_minDelta = minDelta;
 }
 
 std::vector<cv::Point2d> ActiveContour::compute()
@@ -158,7 +156,7 @@ void ActiveContour::createP()
     P = P.inv();
 }
 
-cv::Mat1d ActiveContour::sampleImage(cv::Mat1d x, cv::Mat1d y, int position)
+cv::Mat1d ActiveContour::sampleImage(cv::Mat1d x, cv::Mat1d y, int gradientType)
 {
     cv::Mat1d ans(x.rows,1);
 
@@ -167,7 +165,7 @@ cv::Mat1d ActiveContour::sampleImage(cv::Mat1d x, cv::Mat1d y, int position)
     {
         index[0] = x(i);
         index[1] = y(i);
-        ans(i) = m_gradientImage->GetPixel(index)[position];
+        ans(i) = m_gradientImage->GetPixel(index)[gradientType];
     }
     return ans;
 }

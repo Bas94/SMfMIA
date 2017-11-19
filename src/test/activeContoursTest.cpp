@@ -251,7 +251,7 @@ int main( int argc, char* argv[] )
 
     activeContour.setStartPoints( v );
 
-#if 0
+#if 1
     activeContour.init();
     std::cerr << "start iteration" << std::endl;
     for (int i = 0; i < iterations; i++)
