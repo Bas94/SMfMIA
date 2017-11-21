@@ -8,8 +8,13 @@ namespace ContourFromMask
 {
 
 /*
- * all possible cases of edges:
+ * To walk along the edge, we have to follow the edge.
+ * The edge is a 2D line and so provides for every case two
+ * possible movements.
  *
+ * all possible cases of edges with their 2 possible movements:
+ *
+ * c1:
  * -------
  * |X|X| |
  * -------
@@ -17,7 +22,7 @@ namespace ContourFromMask
  * -------
  * |X|X|X|
  * -------
- *
+ * c2:
  * -------
  * | |X|X|
  * -------
@@ -25,7 +30,7 @@ namespace ContourFromMask
  * -------
  * |X|X|X|
  * -------
- *
+ * c3:
  * -------
  * |X|X|X|
  * -------
@@ -33,7 +38,7 @@ namespace ContourFromMask
  * -------
  * |X|X| |
  * -------
- *
+ * c4:
  * -------
  * |X|X|X|
  * -------
@@ -41,7 +46,7 @@ namespace ContourFromMask
  * -------
  * | |X|X|
  * -------
- *
+ * c5:
  * -------
  * |?| |?|
  * -------
@@ -49,7 +54,7 @@ namespace ContourFromMask
  * -------
  * |X|X|X|
  * -------
- *
+ * c6:
  * -------
  * |X|X|X|
  * -------
@@ -57,7 +62,7 @@ namespace ContourFromMask
  * -------
  * |?| |?|
  * -------
- *
+ * c7:
  * -------
  * |X|X|?|
  * -------
@@ -65,7 +70,7 @@ namespace ContourFromMask
  * -------
  * |X|X|?|
  * -------
- *
+ * c8:
  * -------
  * |?|X|X|
  * -------
@@ -73,7 +78,7 @@ namespace ContourFromMask
  * -------
  * |?|X|X|
  * -------
- *
+ * c9:
  * -------
  * |?|X|X|
  * -------
@@ -81,7 +86,7 @@ namespace ContourFromMask
  * -------
  * | | |?|
  * -------
- *
+ * c10:
  * -------
  * |X|X|?|
  * -------
@@ -89,7 +94,7 @@ namespace ContourFromMask
  * -------
  * |?| | |
  * -------
- *
+ * c11:
  * -------
  * | | |?|
  * -------
@@ -97,7 +102,7 @@ namespace ContourFromMask
  * -------
  * |?|X|X|
  * -------
- *
+ * c12:
  * -------
  * |?| | |
  * -------
@@ -105,7 +110,7 @@ namespace ContourFromMask
  * -------
  * |X|X|?|
  * -------
- *
+ * c13:
  * -------
  * |X|X| |
  * -------
@@ -113,7 +118,7 @@ namespace ContourFromMask
  * -------
  * |X|X| |
  * -------
- *
+ * c14:
  * -------
  * | |X|X|
  * -------
@@ -121,7 +126,7 @@ namespace ContourFromMask
  * -------
  * | |X|X|
  * -------
- *
+ * c15:
  * -------
  * | |X| |
  * -------
@@ -129,7 +134,7 @@ namespace ContourFromMask
  * -------
  * |X|X|X|
  * -------
- *
+ * c16:
  * -------
  * |X|X|X|
  * -------
@@ -153,15 +158,17 @@ static void edgeWalk( int x, int y, int z,
                       vtkImageData* mask,
                       std::vector<cv::Point2d> & foundPoints )
 {
+    // walk along the edge until we get back to the start
     while( x != finishX || y != finishY )
     {
         foundPoints.push_back( cv::Point2d( x, y ) );
 
-        if( !*reinterpret_cast<short*>( mask->GetScalarPointer( x, y, z ) ) )
-        {
-            return;
-        }
+        // the current point should always be an edge point and part of the mask
+        // this condition should always hold, otherwise we left the mask and
+        // algorithm contains errors
+        assert( *reinterpret_cast<short*>( mask->GetScalarPointer( x, y, z ) ) && "ContourFromMask: edge walk failed - mask was left" );
 
+        // get all values around the current point
         short left  = *reinterpret_cast<short*>( mask->GetScalarPointer( x - 1, y,     z ) );
         short right = *reinterpret_cast<short*>( mask->GetScalarPointer( x + 1, y,     z ) );
         short up    = *reinterpret_cast<short*>( mask->GetScalarPointer( x,     y - 1, z ) );
@@ -174,69 +181,73 @@ static void edgeWalk( int x, int y, int z,
 
         MoveType possibleMoves[2];
 
+        // check all cases, given above
+
+        // cases: c7, c8, c13, c14
         if( ( ( !left || !right ) && ( up && down ) ) ||
             ( right && !rightUp && !rightDown ) || ( left && !leftUp && !leftDown ) )
         {
             possibleMoves[0] = MTUp;
             possibleMoves[1] = MTDown;
-        }
+        } // cases: c5, c6, c15, c16
         else if( ( ( !up || !down ) && ( left && right ) ) ||
                  ( up && !rightUp && !leftUp ) || ( down && !rightDown && !leftDown ))
         {
             possibleMoves[0] = MTLeft;
             possibleMoves[1] = MTRight;
-        }
+        } // case: c2
         else if( !up && !left )
         {
             possibleMoves[0] = MTDown;
             possibleMoves[1] = MTRight;
-        }
+        } // case: c1
         else if( !up && !right )
         {
             possibleMoves[0] = MTDown;
             possibleMoves[1] = MTLeft;
-        }
+        } // case: c4
         else if( !down && !left )
         {
             possibleMoves[0] = MTUp;
             possibleMoves[1] = MTRight;
-        }
+        } // case: c3
         else if( !down && !right )
         {
             possibleMoves[0] = MTUp;
             possibleMoves[1] = MTLeft;
+        } // case: c9
+        else if( !leftDown )
+        {
+            possibleMoves[0] = MTLeft;
+            possibleMoves[1] = MTDown;
+        } // case: c10
+        else if( !rightDown )
+        {
+            possibleMoves[0] = MTRight;
+            possibleMoves[1] = MTDown;
+        } // case: c11
+        else if( !leftUp )
+        {
+            possibleMoves[0] = MTLeft;
+            possibleMoves[1] = MTUp;
+        } // case: c12
+        else if( !rightUp )
+        {
+            possibleMoves[0] = MTRight;
+            possibleMoves[1] = MTUp;
         }
         else
         {
-            if( !leftDown )
-            {
-                possibleMoves[0] = MTLeft;
-                possibleMoves[1] = MTDown;
-            }
-            else if( !rightDown )
-            {
-                possibleMoves[0] = MTRight;
-                possibleMoves[1] = MTDown;
-            }
-            else if( !leftUp )
-            {
-                possibleMoves[0] = MTLeft;
-                possibleMoves[1] = MTUp;
-            }
-            else if( !rightUp )
-            {
-                possibleMoves[0] = MTRight;
-                possibleMoves[1] = MTUp;
-            }
-            else
-            {
-                std::cerr << "ContourFromMask: Contour was lost" << std::endl;
-                return;
-            }
+            // there should be no case where we read this part,
+            // because we have covered all cases
+            assert( false && "ContourFromMask: Contour was lost - unknown case" );
+            return;
         }
 
         MoveType move;
         // don't go into the other direction again
+        // take the right move direction, discard the one which leads back
+        // where we came from
         if( ( possibleMoves[0] == MTLeft  && lastMove != MTRight ) ||
             ( possibleMoves[0] == MTRight && lastMove != MTLeft ) ||
             ( possibleMoves[0] == MTUp    && lastMove != MTDown ) ||
@@ -249,6 +260,7 @@ static void edgeWalk( int x, int y, int z,
             move = possibleMoves[1];
         }
 
+        // do the actual movement:
         if( move == MTLeft )
         {
             x -= 1;
@@ -265,6 +277,8 @@ static void edgeWalk( int x, int y, int z,
         {
             y -= 1;
         }
+
+        // save last move, so we don't move back
         lastMove = move;
     }
 }
@@ -294,6 +308,8 @@ std::vector<cv::Point2d> compute( vtkImageData* mask, int zSlice )
                 {
                     edgeWalk( x, y+1, zSlice, x, y, MTDown, mask, result );
                 }
+                // TODO: make this work for more than one component withing the mask
+                // maybe return a vector of contours
                 breaked = true;
                 break;
             }
@@ -304,6 +320,10 @@ std::vector<cv::Point2d> compute( vtkImageData* mask, int zSlice )
     return result;
 }
 
+/*!
+ * implementation of Douglas-Peucker-Algorithm:
+ * https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
+ */
 static void simplify( size_t first,
                       size_t last,
                       std::vector<cv::Point2d> const & contour,
