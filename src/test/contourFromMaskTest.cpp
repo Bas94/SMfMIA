@@ -26,11 +26,12 @@ vtkSmartPointer<vtkPolyData> createPolydataLine( std::vector<cv::Point2d> const 
     {
         points->InsertNextPoint( v[i].x, v[i].y, 0 );
     }
+    points->InsertNextPoint( v[0].x, v[0].y, 0 );
 
     vtkSmartPointer<vtkPolyLine> polyLine =
             vtkSmartPointer<vtkPolyLine>::New();
-    polyLine->GetPointIds()->SetNumberOfIds(v.size());
-    for(unsigned int i = 0; i < v.size(); i++)
+    polyLine->GetPointIds()->SetNumberOfIds(v.size() + 1);
+    for(unsigned int i = 0; i < v.size() + 1; i++)
     {
         polyLine->GetPointIds()->SetId(i,i);
     }
@@ -66,6 +67,11 @@ int main( int argc, char** argv )
             DICOMLoaderVTK::loadDICOM( std::string( argv[1] ) );
 
     std::vector<cv::Point2d> contour = ContourFromMask::compute( image, 0 );
+    std::cout << "contour.size() = " << contour.size() << std::endl;
+    contour = ContourFromMask::simplify( contour, 1 );
+    std::cout << "simplified contour.size() = " << contour.size() << std::endl;
+    contour = ContourFromMask::resample( contour, 100 );
+    std::cout << "resampled contour.size() = " << contour.size() << std::endl;
 
     vtkSmartPointer<vtkPolyData> polyData =
             createPolydataLine( contour );
@@ -80,6 +86,7 @@ int main( int argc, char** argv )
     actor->SetMapper(mapper);
     actor->GetProperty()->SetColor( 1.0, 0.0, 0.0 );
     actor->GetProperty()->SetLineWidth( 1 );
+    actor->GetProperty()->SetPointSize( 5 );
 
     vtkSmartPointer<vtkImageMapper> imageMapper =
             vtkSmartPointer<vtkImageMapper>::New();

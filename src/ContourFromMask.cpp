@@ -304,4 +304,85 @@ std::vector<cv::Point2d> compute( vtkImageData* mask, int zSlice )
     return result;
 }
 
+static void simplify( size_t first,
+                      size_t last,
+                      std::vector<cv::Point2d> const & contour,
+                      std::vector<size_t> & reducedPoints,
+                      double eps )
+{
+     cv::Point2d const & p1 = contour[first];
+     cv::Point2d const & p2 = contour[last];
+     double maxDist = 0;
+     size_t maxIndex = 0;
+
+     // n^t*(x-p) = distance, for normalized n
+     cv::Vec2d n( p1.y-p2.y, p2.x-p1.x );
+     n = cv::normalize( n );
+     for( size_t i = first + 1; i < last; ++i )
+     {
+         double dist = fabs( n.dot( contour[i] - p1 ) );
+         if( maxDist < dist )
+         {
+            maxDist = dist;
+            maxIndex = i;
+         }
+     }
+     if( maxDist < eps )
+         return;
+
+     reducedPoints.push_back( maxIndex );
+
+     simplify( first, maxIndex, contour, reducedPoints, eps );
+     simplify( maxIndex, last, contour, reducedPoints, eps );
+}
+
+std::vector<cv::Point2d> simplify( std::vector<cv::Point2d> const & contour, double eps )
+{
+    std::vector<size_t> allowedIndices;
+    allowedIndices.push_back( 0 );
+    allowedIndices.push_back( contour.size()-1 );
+    simplify( 0, contour.size()-1, contour, allowedIndices, eps );
+
+    std::sort( allowedIndices.begin(), allowedIndices.end() );
+
+    std::vector<cv::Point2d> result( allowedIndices.size() );
+    for( size_t i = 0; i < allowedIndices.size(); ++i )
+    {
+         result[i] = contour[allowedIndices[i]];
+    }
+    return result;
+}
+
+std::vector<cv::Point2d> resample( std::vector<cv::Point2d> const &contour, size_t numSamplePoints )
+{
+    double wholeLength = 0;
+    size_t lastI = contour.size()-1;
+    for( size_t i = 0; i < contour.size(); ++i )
+    {
+        wholeLength += cv::norm( contour[i] - contour[lastI] );
+        lastI = i;
+    }
+
+    double sampleDistance = wholeLength / numSamplePoints;
+    size_t p1Index = contour.size()-1;
+    size_t p2Index = 0;
+    double currDist = 0;
+    double currLineDist = cv::norm( contour[p2Index] - contour[p1Index] );
+    double lineEndDist = currLineDist;
+    std::vector<cv::Point2d> result;
+    for( size_t i = 0; i < numSamplePoints; ++i, currDist += sampleDistance )
+    {
+        while( lineEndDist < currDist )
+        {
+            p1Index = p2Index;
+            p2Index++;
+            currLineDist = cv::norm( contour[p2Index] - contour[p1Index] );
+            lineEndDist += currLineDist;
+        }
+        double t = ( lineEndDist - currDist ) / currLineDist;
+        result.push_back( contour[p2Index] - t * ( contour[p2Index] - contour[p1Index] ) );
+    }
+    return result;
+}
+
 } // namespace ContourFromMask
