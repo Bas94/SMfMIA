@@ -147,3 +147,6 @@ add_executable( contourFromMaskTest test/contourFromMaskTest.cpp
                                     SMfMIAInteractorStyle.cpp
                                     SMfMIAInteractorStyle.h )
 target_link_libraries( contourFromMaskTest ${PROJECT_LIBRARIES} )
+
+add_executable( fit2DMaskContourToImageTest test/fit2DMaskContourToImageTest.cpp ${SRC_LIST} ${HDR_LIST} )
+target_link_libraries( fit2DMaskContourToImageTest ${PROJECT_LIBRARIES} )
