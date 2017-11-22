@@ -165,7 +165,7 @@ int main( int argc, char** argv )
     loadData( options, imageData, imageMasks );
 	
 	// denoising image
-	vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,0.5,4);
+	vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,2,100);
    
 	// display everything
     displayImages(smoothedImageData, imageMasks );
