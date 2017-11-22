@@ -3,7 +3,7 @@
 #include <itkVTKImageToImageFilter.h>
 #include <itkGradientMagnitudeImageFilter.h>
 
-typedef itk::Image<unsigned char, 2> ImageType;
+typedef itk::Image<short, 2> ImageType;
 
 ActiveContour::ActiveContour()
     : P( cv::Mat1d( 0, 0 ) )

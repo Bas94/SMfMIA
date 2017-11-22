@@ -122,6 +122,7 @@ set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               SMfMIAImageViewer.cpp
               Denoising.cpp
               ActiveContour.cpp
+              ContourFromMask.cpp
 			  Helpers/Converter.cpp)
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
@@ -130,11 +131,24 @@ set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               ColorTable.h
               Denoising.h
               ActiveContour.h
-			  Helpers/Converter.h)
+			  Helpers/Converter.h
+              ContourFromMask.h)
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARIES})
 
 add_executable( activeContoursTest test/activeContoursTest.cpp ActiveContour.cpp ActiveContour.h )
-target_link_libraries(activeContoursTest ${PROJECT_LIBRARIES})
+target_link_libraries( activeContoursTest ${PROJECT_LIBRARIES} )
+
+add_executable( contourFromMaskTest test/contourFromMaskTest.cpp
+                                    fileHelpers/DICOMLoaderVTK.cpp
+                                    fileHelpers/DICOMLoaderVTK.h
+                                    ContourFromMask.cpp
+                                    ContourFromMask.h
+                                    SMfMIAInteractorStyle.cpp
+                                    SMfMIAInteractorStyle.h )
+target_link_libraries( contourFromMaskTest ${PROJECT_LIBRARIES} )
+
+add_executable( fit2DMaskContourToImageTest test/fit2DMaskContourToImageTest.cpp ${SRC_LIST} ${HDR_LIST} )
+target_link_libraries( fit2DMaskContourToImageTest ${PROJECT_LIBRARIES} )

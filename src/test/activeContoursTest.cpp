@@ -153,8 +153,8 @@ int main( int argc, char* argv[] )
     int nPoints = 100;
     double alpha = 0.01;
     double beta = 0.2;
-    double gamma = 0.7;
-    double sigma = 10;
+    double gamma = 0.35;
+    double sigma = 5;
     double iterations = 2000;
 
     if( argc > 1 ) nPoints = atoi(argv[1]);
@@ -218,8 +218,8 @@ int main( int argc, char* argv[] )
     imageData->DeepCopy(connector->GetOutput());
     vtkSmartPointer<vtkImageMapper> imageMapper =
         vtkSmartPointer<vtkImageMapper>::New();
-    imageMapper->SetColorLevel(225);
-    imageMapper->SetColorWindow( 100 );
+    imageMapper->SetColorLevel( 127 );
+    imageMapper->SetColorWindow( 255 );
       imageMapper->SetInputData( imageData );
 #endif
 
