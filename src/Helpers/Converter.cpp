@@ -5,7 +5,7 @@ void Converter::ConvertVTKToITK(void * pimg, vtkSmartPointer<vtkImageData> image
 {
 	//typedef itk::Image< PixelType, Dimension > ImageType;
 
-	typedef itk::VTKImageToImageFilter< ImageTypeConv > VTKTOITKFilterType;
+	typedef itk::VTKImageToImageFilter< ImageType> VTKTOITKFilterType;
 	VTKTOITKFilterType::Pointer filter = VTKTOITKFilterType::New();
 	filter->SetInput(imageData);
 
@@ -21,4 +21,17 @@ void Converter::ConvertVTKToITK(void * pimg, vtkSmartPointer<vtkImageData> image
 	ImageType::Pointer *outITKImage = (ImageType::Pointer *) pimg;
 	*outITKImage = filter->GetOutput();
 	return;
+}
+
+vtkSmartPointer<vtkImageData> Converter::ConvertITKToVTK(ImageType::Pointer itkImagePointer)
+{
+	ConnectorType::Pointer connector = ConnectorType::New();
+
+	connector->SetInput(itkImagePointer);
+	connector->Update();
+
+	vtkSmartPointer<vtkImageData> vtkImage = vtkSmartPointer<vtkImageData>::New();
+	vtkImage->DeepCopy(connector->GetOutput());
+
+	return vtkImage;
 }
