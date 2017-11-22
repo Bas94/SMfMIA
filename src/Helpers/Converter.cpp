@@ -1,11 +1,11 @@
-#include "Converter.h"
+#include "Helpers/Converter.h"
 #include <itkVTKImageToImageFilter.h>
 
-itk::VTKImageToImageFilter<itk::Image< PixelType, Dimension>>::Pointer ConvertVTKToITK(vtkSmartPointer<vtkImageData> imageData)
+void Converter::ConvertVTKToITK(void * pimg, vtkSmartPointer<vtkImageData> imageData)
 {
-	typedef itk::Image< PixelType, Dimension > ImageType;
+	//typedef itk::Image< PixelType, Dimension > ImageType;
 
-	typedef itk::VTKImageToImageFilter< ImageType > VTKTOITKFilterType;
+	typedef itk::VTKImageToImageFilter< ImageTypeConv > VTKTOITKFilterType;
 	VTKTOITKFilterType::Pointer filter = VTKTOITKFilterType::New();
 	filter->SetInput(imageData);
 
@@ -18,7 +18,7 @@ itk::VTKImageToImageFilter<itk::Image< PixelType, Dimension>>::Pointer ConvertVT
 		std::cerr << "Error: " << error << std::endl;
 	}
 
-	itk::Image<PixelType, Dimension>::Pointer outITKImage = itk::Image<PixelType, Dimension>::New();
-	outITKImage = filter->GetOutput();
-	return filter;
+	ImageType::Pointer *outITKImage = (ImageType::Pointer *) pimg;
+	*outITKImage = filter->GetOutput();
+	return;
 }

@@ -5,10 +5,15 @@
 #include <itkSmartPointer.h>
 #include <itkVTKImageToImageFilter.h>
 
-typedef short PixelType;
-const unsigned int Dimension = 3;
+#include "Helpers\TypeDefinitions.h"
+namespace Converter
+{
 
-itk::VTKImageToImageFilter<itk::Image<PixelType, Dimension>>::Pointer  ConvertVTKToITK(vtkSmartPointer<vtkImageData> imageData);
+	typedef short PixelTypeConv;
+	typedef itk::Image< PixelTypeConv, 3 > ImageTypeConv;
 
-itk::Image<PixelType, Dimension>::Pointer itkImageConv;
 
+	void ConvertVTKToITK(void * pimg, vtkSmartPointer<vtkImageData> imageData);
+
+	//itk::Image<PixelTypeConv, 3>::Pointer itkImageConv;
+}
