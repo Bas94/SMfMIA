@@ -132,7 +132,8 @@ set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               Denoising.h
               ActiveContour.h
 			  Helpers/Converter.h
-              ContourFromMask.h)
+              ContourFromMask.h
+			  Helpers/TypeDefinitions.h)
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
