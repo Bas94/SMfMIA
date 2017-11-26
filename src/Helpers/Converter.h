@@ -7,7 +7,8 @@
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
 
-#include "Helpers\TypeDefinitions.h"
+#include "Helpers/TypeDefinitions.h"
+
 namespace Converter
 {
 	
