@@ -32,13 +32,11 @@
 
 namespace
 {
-typedef itk::Image<short, 2> ImageType;
-typedef itk::Image<float, 2>         FloatImageType;
-typedef ImageType::IndexType         IndexType;
+typedef ImageType2D::IndexType         IndexType;
 typedef itk::Image<itk::CovariantVector<float, 2>, 2>  OutputImageType;
 typedef itk::GradientRecursiveGaussianImageFilter<
-FloatImageType, OutputImageType>        FilterType;
-typedef itk::GradientMagnitudeImageFilter<ImageType, FloatImageType> GradMagfilterType;
+FloatImageType2D, OutputImageType>        FilterType;
+typedef itk::GradientMagnitudeImageFilter<ImageType2D, FloatImageType2D> GradMagfilterType;
 }
 
 vtkSmartPointer<vtkPolyData> createPolydataLine( std::vector<cv::Point2d> const & v )
@@ -99,7 +97,7 @@ std::vector<cv::Point2d> generateCircle( double cx, double cy, double rx, double
     return points;
 }
 
-void createImage(ImageType::Pointer image,
+void createImage(ImageType2D::Pointer image,
                  int w, int h, double cx, double cy, double rx, double ry)
 {
 
@@ -107,7 +105,7 @@ void createImage(ImageType::Pointer image,
     size[0] = w;
     size[1] = h;
 
-    itk::RandomImageSource<ImageType>::Pointer randomImageSource = itk::RandomImageSource<ImageType>::New();
+    itk::RandomImageSource<ImageType2D>::Pointer randomImageSource = itk::RandomImageSource<ImageType2D>::New();
     randomImageSource->SetNumberOfThreads(1); // to produce non-random results
     randomImageSource->SetSize(size);
     randomImageSource->SetMin(200);
@@ -144,9 +142,9 @@ int main( int argc, char* argv[] )
     //Image dimensions
     int w = 300;
     int h = 300;
-    ImageType::Pointer image;
+    ImageType2D::Pointer image;
     //Synthesize the image
-    image = ImageType::New();
+    image = ImageType2D::New();
     createImage(image, w, h, 150, 150, 55, 55);
 
     //Snake parameters
@@ -206,9 +204,9 @@ int main( int argc, char* argv[] )
         vtkSmartPointer<vtkImageMapper>::New();
     imageMapper->SetColorLevel(0);
     imageMapper->SetColorWindow( 100 );
-      imageMapper->SetInputData( imageData );
+    imageMapper->SetInputData( imageData );
 #else
-    typedef itk::ImageToVTKImageFilter<ImageType>       ConnectorType;
+    typedef itk::ImageToVTKImageFilter<ImageType2D>       ConnectorType;
     ConnectorType::Pointer connector = ConnectorType::New();
 
     connector->SetInput(image);
@@ -220,7 +218,7 @@ int main( int argc, char* argv[] )
         vtkSmartPointer<vtkImageMapper>::New();
     imageMapper->SetColorLevel( 127 );
     imageMapper->SetColorWindow( 255 );
-      imageMapper->SetInputData( imageData );
+    imageMapper->SetInputData( imageData );
 #endif
 
       vtkSmartPointer<vtkActor2D> imageActor =

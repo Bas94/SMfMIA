@@ -3,8 +3,6 @@
 #include <itkVTKImageToImageFilter.h>
 #include <itkGradientMagnitudeImageFilter.h>
 
-typedef itk::Image<short, 2> ImageType;
-
 ActiveContour::ActiveContour()
     : P( cv::Mat1d( 0, 0 ) )
     , m_elasticity( 0.01 )
@@ -24,16 +22,16 @@ ActiveContour::~ActiveContour()
 
 void ActiveContour::setImage( vtkImageData *image )
 {
-    typedef itk::VTKImageToImageFilter< ImageType > VTKTOITKFilterType;
+    typedef itk::VTKImageToImageFilter< ImageType2D > VTKTOITKFilterType;
     VTKTOITKFilterType::Pointer filter = VTKTOITKFilterType::New();
     filter->SetInput( image );
 
-    itk::GradientMagnitudeImageFilter<ImageType, FloatImageType>::Pointer gradientMagnitudeFilter =
-            itk::GradientMagnitudeImageFilter<ImageType, FloatImageType>::New();
+    itk::GradientMagnitudeImageFilter<ImageType2D, FloatImageType2D>::Pointer gradientMagnitudeFilter =
+            itk::GradientMagnitudeImageFilter<ImageType2D, FloatImageType2D>::New();
     gradientMagnitudeFilter->SetInput( filter->GetOutput() );
     gradientMagnitudeFilter->Update();
 
-    m_gradientImageFilter = itk::GradientRecursiveGaussianImageFilter<FloatImageType, OutputImageType >::New();
+    m_gradientImageFilter = itk::GradientRecursiveGaussianImageFilter<FloatImageType2D, OutputImageType >::New();
     m_gradientImageFilter->SetInput( gradientMagnitudeFilter->GetOutput() );
     m_gradientImageFilter->SetSigma( m_smoothingSigma );
     m_gradientImageFilter->Update();
@@ -160,7 +158,7 @@ cv::Mat1d ActiveContour::sampleImage(cv::Mat1d x, cv::Mat1d y, int gradientType)
 {
     cv::Mat1d ans(x.rows,1);
 
-    ImageType::IndexType index;
+    ImageType2D::IndexType index;
     for (int i=0; i<x.rows; i++)
     {
         index[0] = x(i);

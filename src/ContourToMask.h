@@ -5,7 +5,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
 #include <vector>
-#include <ActiveContour.h>
+#include "Helpers/TypeDefinitions.h"
 
 namespace ContourToMask
 {

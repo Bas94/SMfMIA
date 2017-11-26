@@ -2,14 +2,11 @@
 #ifndef ACTIVE_CONTOUR_H
 #define ACTIVE_CONTOUR_H
 
-#include <vector>
-#include <opencv2/core.hpp>
+#include "Helpers/TypeDefinitions.h"
 #include <itkImage.h>
 #include <itkGradientRecursiveGaussianImageFilter.h>
 
 class vtkImageData;
-
-typedef std::vector<cv::Point2d> Contour;
 
 /*!
  * \brief The ActiveContour class implements active contours algorithm
@@ -125,10 +122,9 @@ protected:
      */
     cv::Mat1d sampleImage( cv::Mat1d x, cv::Mat1d y, int gradientType );
 
-    typedef itk::Image<float, 2> FloatImageType;
     typedef itk::Image<itk::CovariantVector<float, 2>, 2> OutputImageType;
 
-    itk::GradientRecursiveGaussianImageFilter<FloatImageType, OutputImageType >::Pointer m_gradientImageFilter;
+    itk::GradientRecursiveGaussianImageFilter<FloatImageType2D, OutputImageType >::Pointer m_gradientImageFilter;
     // internal pointer to gradient image
     OutputImageType::Pointer m_gradientImage;
 

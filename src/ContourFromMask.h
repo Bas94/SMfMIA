@@ -4,7 +4,7 @@
 #include <opencv2/core.hpp>
 #include <vtkImageData.h>
 #include <vector>
-#include <ActiveContour.h>
+#include "Helpers/TypeDefinitions.h"
 
 namespace ContourFromMask
 {
