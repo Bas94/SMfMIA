@@ -4,6 +4,7 @@
 #include <opencv2/core.hpp>
 #include <vtkImageData.h>
 #include <vector>
+#include <ActiveContour.h>
 
 namespace ContourFromMask
 {
@@ -17,7 +18,8 @@ namespace ContourFromMask
      * \param zSLice is the z slice index of the mask where the XY is chosen from
      * \return returns vector of points which discribe the outer contour of the mask
      */
-    std::vector<cv::Point2d> compute( vtkImageData* mask, int zSLice );
+    Contour compute( vtkImageData* mask, int zSLice );
+    Contour computeWithEdgeFilter( vtkImageData* mask, int zSLice );
 
     /*!
      * \brief simplify simplifies a given contour. The simplification is done with
@@ -27,7 +29,7 @@ namespace ContourFromMask
      *        simplified lineto be discarded
      * \return returns the simplified set of points
      */
-    std::vector<cv::Point2d> simplify( std::vector<cv::Point2d> const & contour, double eps );
+    Contour simplify( Contour const & contour, double eps );
 
     /*!
      * \brief resample resamples a given contour, so that all points are equally
@@ -37,7 +39,7 @@ namespace ContourFromMask
      * resampled contour
      * \return resampled contour with \p numSamplePoints points
      */
-    std::vector<cv::Point2d> resample( std::vector<cv::Point2d> const & contour, size_t numSamplePoints );
+    Contour resample( Contour const & contour, size_t numSamplePoints );
 
 } // namespace ContourFromMask
 

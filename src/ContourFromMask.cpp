@@ -3,6 +3,9 @@
 #include <vtkPointData.h>
 #include <vtkDataArray.h>
 #include <vtkDataArrayIteratorMacro.h>
+#include <itkBinaryContourImageFilter.h>
+
+#include "Helpers/TypeDefinitions.h"
 
 namespace ContourFromMask
 {
@@ -156,7 +159,7 @@ static void edgeWalk( int x, int y, int z,
                       int finishX, int finishY,
                       MoveType lastMove,
                       vtkImageData* mask,
-                      std::vector<cv::Point2d> & foundPoints )
+                      Contour & foundPoints )
 {
     // walk along the edge until we get back to the start
     while( x != finishX || y != finishY )
@@ -283,9 +286,9 @@ static void edgeWalk( int x, int y, int z,
     }
 }
 
-std::vector<cv::Point2d> compute( vtkImageData* mask, int zSlice )
+Contour compute( vtkImageData* mask, int zSlice )
 {
-    std::vector<cv::Point2d> result;
+    Contour result;
 
     bool breaked = false;
     int* dims = mask->GetDimensions();
@@ -320,13 +323,148 @@ std::vector<cv::Point2d> compute( vtkImageData* mask, int zSlice )
     return result;
 }
 
+
+static void contourWalk( int x, int y, int z,
+                         vtkImageData* mask,
+                         Contour & foundPoints )
+{
+    // walk along the edge until we get back to the start
+    short* p = reinterpret_cast<short*>( mask->GetScalarPointer( x, y, z ) );
+    while( *p )
+    {
+        *p = 0;
+        foundPoints.push_back( cv::Point2d( x, y ) );
+
+        // get all values around the current point
+        short* left  = reinterpret_cast<short*>( mask->GetScalarPointer( x - 1, y,     z ) );
+        short* right = reinterpret_cast<short*>( mask->GetScalarPointer( x + 1, y,     z ) );
+        short* up    = reinterpret_cast<short*>( mask->GetScalarPointer( x,     y - 1, z ) );
+        short* down  = reinterpret_cast<short*>( mask->GetScalarPointer( x,     y + 1, z ) );
+
+        if( *left )
+        {
+            x -= 1;
+            p = left;
+        }
+        else if( *right )
+        {
+            x += 1;
+            p = right;
+        }
+        else if( *up )
+        {
+            y -= 1;
+            p = up;
+        }
+        else if( *down )
+        {
+            y += 1;
+            p = down;
+        }
+        else
+        {
+            short* leftUp    = reinterpret_cast<short*>( mask->GetScalarPointer( x - 1, y - 1,     z ) );
+            short* rightUp   = reinterpret_cast<short*>( mask->GetScalarPointer( x + 1, y - 1,     z ) );
+            short* leftDown  = reinterpret_cast<short*>( mask->GetScalarPointer( x - 1, y + 1, z ) );
+            short* rightDown = reinterpret_cast<short*>( mask->GetScalarPointer( x + 1, y + 1, z ) );
+
+            if( *leftUp )
+            {
+                x -= 1;
+                y -= 1;
+                p = leftUp;
+            }
+            else if( *rightUp )
+            {
+                x += 1;
+                y -= 1;
+                p = rightUp;
+            }
+            else if( *leftDown )
+            {
+                x -= 1;
+                y += 1;
+                p = leftDown;
+            }
+            else if( *rightDown )
+            {
+                x += 1;
+                y += 1;
+                p = rightDown;
+            }
+        }
+    }
+}
+
+Contour computeWithEdgeFilter( vtkImageData* mask, int zSlice )
+{
+    Contour result;
+
+    itk::VTKImageToImageFilter<MaskType>::Pointer connector =
+            itk::VTKImageToImageFilter<MaskType>::New();
+
+    connector->SetInput( mask );
+    connector->Update();
+
+    itk::BinaryContourImageFilter<MaskType, MaskType>::Pointer contourFilter =
+            itk::BinaryContourImageFilter<MaskType, MaskType>::New();
+
+    contourFilter->SetInput( connector->GetOutput() );
+    contourFilter->SetBackgroundValue( 0 );
+    contourFilter->SetForegroundValue( 1 );
+    contourFilter->SetFullyConnected( false );
+    contourFilter->Update();
+
+    itk::ImageToVTKImageFilter<MaskType>::Pointer connectorITKVTK =
+            itk::ImageToVTKImageFilter<MaskType>::New();
+
+    connectorITKVTK->SetInput( contourFilter->GetOutput() );
+    connectorITKVTK->Update();
+
+    vtkImageData* maskContour = connectorITKVTK->GetOutput();
+
+    bool breaked = false;
+    int* dims = maskContour->GetDimensions();
+    assert( 0 <= zSlice && zSlice < dims[2] );
+    for( int y = 1; y < dims[1] - 1; ++y )
+    {
+        for( int x = 1; x < dims[0] - 1; ++x )
+        {
+            short* v = reinterpret_cast<short*>( maskContour->GetScalarPointer( x, y, zSlice ) );
+            if( *v )
+            {
+                *v = 0;
+                result.push_back( cv::Point2d( x, y) );
+
+                short* down = reinterpret_cast<short*>( maskContour->GetScalarPointer( x, y + 1, zSlice ) );
+                if( !*down )
+                {
+                    contourWalk( x+1, y, zSlice, maskContour, result );
+                }
+                else
+                {
+                    contourWalk( x, y+1, zSlice, maskContour, result );
+                }
+                // TODO: make this work for more than one component withing the mask
+                // maybe return a vector of contours
+                breaked = true;
+                break;
+            }
+        }
+        if( breaked )
+            break;
+    }
+    return result;
+}
+
+
 /*!
  * implementation of Douglas-Peucker-Algorithm:
  * https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
  */
 static void simplify( size_t first,
                       size_t last,
-                      std::vector<cv::Point2d> const & contour,
+                      Contour const & contour,
                       std::vector<size_t> & reducedPoints,
                       double eps )
 {
@@ -356,7 +494,7 @@ static void simplify( size_t first,
      simplify( maxIndex, last, contour, reducedPoints, eps );
 }
 
-std::vector<cv::Point2d> simplify( std::vector<cv::Point2d> const & contour, double eps )
+Contour simplify( Contour const & contour, double eps )
 {
     std::vector<size_t> allowedIndices;
     allowedIndices.push_back( 0 );
@@ -365,7 +503,7 @@ std::vector<cv::Point2d> simplify( std::vector<cv::Point2d> const & contour, dou
 
     std::sort( allowedIndices.begin(), allowedIndices.end() );
 
-    std::vector<cv::Point2d> result( allowedIndices.size() );
+    Contour result( allowedIndices.size() );
     for( size_t i = 0; i < allowedIndices.size(); ++i )
     {
          result[i] = contour[allowedIndices[i]];
@@ -373,7 +511,7 @@ std::vector<cv::Point2d> simplify( std::vector<cv::Point2d> const & contour, dou
     return result;
 }
 
-std::vector<cv::Point2d> resample( std::vector<cv::Point2d> const &contour, size_t numSamplePoints )
+Contour resample( std::vector<cv::Point2d> const &contour, size_t numSamplePoints )
 {
     double wholeLength = 0;
     size_t lastI = contour.size()-1;

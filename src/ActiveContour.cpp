@@ -41,7 +41,7 @@ void ActiveContour::setImage( vtkImageData *image )
     m_gradientImage = m_gradientImageFilter->GetOutput();
 }
 
-void ActiveContour::setStartPoints( std::vector<cv::Point2d> points )
+void ActiveContour::setStartPoints( Contour points )
 {
     m_px = cv::Mat1d( points.size(), 1 );
     m_py = cv::Mat1d( points.size(), 1 );
@@ -77,7 +77,7 @@ void ActiveContour::setMaxIterations( unsigned int iterations )
     m_iterations = iterations;
 }
 
-std::vector<cv::Point2d> ActiveContour::compute()
+Contour ActiveContour::compute()
 {
     createP();
 
@@ -100,11 +100,11 @@ void ActiveContour::init()
     createP();
 }
 
-std::vector<cv::Point2d> ActiveContour::step()
+Contour ActiveContour::step()
 {
     iterationStep();
 
-    std::vector<cv::Point2d> points( m_px.rows );
+    Contour points( m_px.rows );
     for( size_t i = 0; i < points.size(); ++i )
     {
         points[i].x = m_px( i );

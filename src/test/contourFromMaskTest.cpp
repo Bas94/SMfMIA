@@ -16,6 +16,9 @@
 #include <vtkProperty2D.h>
 #include <vtkDataSetMapper.h>
 #include <vtkImageMapper.h>
+#include <itkBinaryContourImageFilter.h>
+
+#include <Helpers/TypeDefinitions.h>
 
 vtkSmartPointer<vtkPolyData> createPolydataLine( std::vector<cv::Point2d> const & v )
 {
@@ -87,6 +90,7 @@ int main( int argc, char** argv )
     actor->GetProperty()->SetColor( 1.0, 0.0, 0.0 );
     actor->GetProperty()->SetLineWidth( 1 );
     actor->GetProperty()->SetPointSize( 5 );
+
 
     vtkSmartPointer<vtkImageMapper> imageMapper =
             vtkSmartPointer<vtkImageMapper>::New();

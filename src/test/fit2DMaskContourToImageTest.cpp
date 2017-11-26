@@ -1,7 +1,7 @@
 #include "fileHelpers/DICOMLoaderVTK.h"
 #include "ContourFromMask.h"
-
 #include "ActiveContour.h"
+#include "ContourToMask.h"
 
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
@@ -18,6 +18,10 @@
 #include <vtkProperty2D.h>
 #include <vtkDataSetMapper.h>
 #include <vtkImageMapper.h>
+
+#include <opencv2/highgui.hpp>
+
+#include <Denoising.h>
 
 vtkSmartPointer<vtkPolyData> createPolydataLine( std::vector<cv::Point2d> const & v )
 {
@@ -79,6 +83,10 @@ int main( int argc, char** argv )
     vtkSmartPointer<vtkImageData> mask =
             DICOMLoaderVTK::loadDICOM( std::string( argv[2] ) );
 
+    std::cout << "start bilateral filtering" << std::endl;
+    image = Denoising::bilateralFilter( image, 2, 100 );
+    std::cout << "finshed bilateral filtering" << std::endl;
+
     vtkSmartPointer<vtkImageMapper> imageMapper =
             vtkSmartPointer<vtkImageMapper>::New();
     imageMapper->SetColorLevel( 185 );
@@ -103,13 +111,13 @@ int main( int argc, char** argv )
     renderWindow->Render();
 
     //Snake parameters
-    int nPoints = 400;
+    int nPoints = 500;
     double simplficationEps = 1;
     double alpha = 3;
     double beta = 1;
     double gamma = 0.1;
     double sigma = 7;
-    double iterations = 2000;
+    double iterations = 1000;
 
     std::vector<cv::Point2d> contour = ContourFromMask::compute( mask, 0 );
     std::cout << "contour.size() = " << contour.size() << std::endl;
@@ -145,19 +153,27 @@ int main( int argc, char** argv )
 
     activeContour.setStartPoints( contour );
 
-    activeContour.init();
+    //activeContour.init();
     std::cerr << "start iteration" << std::endl;
-    for (int i = 0; i < iterations; i++)
-    {
-        updatePolydata( polyData, activeContour.step() );
-        polyData->Modified();
-        mapper->Modified();
-        renderer->Modified();
-        if( i % 10 == 0 )
-            renderWindow->Render();
-
-    }
+    activeContour.compute();
+    //for (int i = 0; i < iterations; i++)
+    //{
+    //    updatePolydata( polyData, activeContour.step() );
+    //    polyData->Modified();
+    //    mapper->Modified();
+    //    renderer->Modified();
+    //    if( i % 1 == 0 )
+    //        renderWindow->Render();
+    //
+    //}
+    updatePolydata( polyData, activeContour.step() );
+    polyData->Modified();
+    mapper->Modified();
+    renderer->Modified();
+    renderWindow->Render();
     std::cerr << "iteration finished" << std::endl;
+
+    cv::imwrite( "mask.jpg", ContourToMask::compute( activeContour.step(), image->GetDimensions() ) );
 
     renderWindowInteractor->Start();
 

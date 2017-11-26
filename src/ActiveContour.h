@@ -9,6 +9,8 @@
 
 class vtkImageData;
 
+typedef std::vector<cv::Point2d> Contour;
+
 /*!
  * \brief The ActiveContour class implements active contours algorithm
  * which optimizes a given contour with repect to the edges within the
@@ -43,7 +45,7 @@ public:
      * incidental form of the contour.
      * \param points is a vector of 2D points which will be optimized
      */
-    void setStartPoints( std::vector<cv::Point2d> points );
+    void setStartPoints( Contour points );
 
     /*!
      * \brief setElasticity sets a factor \p alpha for the elasticity of
@@ -86,7 +88,7 @@ public:
      * optimizes the curve with the given parameters.
      * \return returns the optimized contour points
      */
-    std::vector<cv::Point2d> compute();
+    Contour compute();
 
     /*!
      * \brief init must be called before using the manual step function.
@@ -102,7 +104,7 @@ public:
      * time and will be slower than computing multiple steps with compute
      * \return new points after one step of the optimization
      */
-    std::vector<cv::Point2d> step();
+    Contour step();
 
 protected:
 

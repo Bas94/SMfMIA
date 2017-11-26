@@ -32,7 +32,7 @@
 
 namespace
 {
-typedef itk::Image<unsigned char, 2> ImageType;
+typedef itk::Image<short, 2> ImageType;
 typedef itk::Image<float, 2>         FloatImageType;
 typedef ImageType::IndexType         IndexType;
 typedef itk::Image<itk::CovariantVector<float, 2>, 2>  OutputImageType;
