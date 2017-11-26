@@ -6,7 +6,7 @@
 #include <itkSmartPointer.h>
 
 #include "Helpers/Converter.h"
-#include "Helpers\TypeDefinitions.h"
+#include "Helpers/TypeDefinitions.h"
 
 namespace Denoising
 {
