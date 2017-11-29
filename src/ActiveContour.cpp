@@ -117,6 +117,16 @@ void ActiveContour::iterationStep()
     cv::Mat1d newY = P * ( m_py + m_speed * sampleImage( m_px, m_py, 1 ) );
     m_px = newX;
     m_py = newY;
+
+    for( size_t i = 0; i < m_px.rows; ++i )
+    {
+        if( m_px(i) < 0 ) m_px(i) = 0;
+        if( m_py(i) < 0 ) m_py(i) = 0;
+        if( m_px(i) >= m_gradientImage->GetLargestPossibleRegion().GetSize()[0] )
+            m_px(i) = m_gradientImage->GetLargestPossibleRegion().GetSize()[0] - 1;
+        if( m_py(i) >= m_gradientImage->GetLargestPossibleRegion().GetSize()[1] )
+            m_py(i) = m_gradientImage->GetLargestPossibleRegion().GetSize()[1] - 1;
+    }
 }
 
 void ActiveContour::createP()
@@ -163,6 +173,8 @@ cv::Mat1d ActiveContour::sampleImage(cv::Mat1d x, cv::Mat1d y, int gradientType)
     {
         index[0] = x(i);
         index[1] = y(i);
+        assert( 0 <= x(i) && x(i) < m_gradientImage->GetLargestPossibleRegion().GetSize()[0] &&
+                0 <= y(i) && y(i) < m_gradientImage->GetLargestPossibleRegion().GetSize()[1] );
         ans(i) = m_gradientImage->GetPixel(index)[gradientType];
     }
     return ans;

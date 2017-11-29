@@ -363,8 +363,8 @@ static void contourWalk( int x, int y, int z,
         }
         else
         {
-            short* leftUp    = reinterpret_cast<short*>( mask->GetScalarPointer( x - 1, y - 1,     z ) );
-            short* rightUp   = reinterpret_cast<short*>( mask->GetScalarPointer( x + 1, y - 1,     z ) );
+            short* leftUp    = reinterpret_cast<short*>( mask->GetScalarPointer( x - 1, y - 1, z ) );
+            short* rightUp   = reinterpret_cast<short*>( mask->GetScalarPointer( x + 1, y - 1, z ) );
             short* leftDown  = reinterpret_cast<short*>( mask->GetScalarPointer( x - 1, y + 1, z ) );
             short* rightDown = reinterpret_cast<short*>( mask->GetScalarPointer( x + 1, y + 1, z ) );
 
@@ -396,9 +396,9 @@ static void contourWalk( int x, int y, int z,
     }
 }
 
-Contour computeWithEdgeFilter( vtkImageData* mask, int zSlice )
+std::vector<Contour> computeWithEdgeFilter( vtkImageData* mask, int zSlice, int sizeThreshold )
 {
-    Contour result;
+    std::vector<Contour> result;
 
     itk::VTKImageToImageFilter<MaskType>::Pointer connector =
             itk::VTKImageToImageFilter<MaskType>::New();
@@ -412,7 +412,7 @@ Contour computeWithEdgeFilter( vtkImageData* mask, int zSlice )
     contourFilter->SetInput( connector->GetOutput() );
     contourFilter->SetBackgroundValue( 0 );
     contourFilter->SetForegroundValue( 1 );
-    contourFilter->SetFullyConnected( false );
+    contourFilter->SetFullyConnected( true );
     contourFilter->Update();
 
     itk::ImageToVTKImageFilter<MaskType>::Pointer connectorITKVTK =
@@ -423,7 +423,6 @@ Contour computeWithEdgeFilter( vtkImageData* mask, int zSlice )
 
     vtkImageData* maskContour = connectorITKVTK->GetOutput();
 
-    bool breaked = false;
     int* dims = maskContour->GetDimensions();
     assert( 0 <= zSlice && zSlice < dims[2] );
     for( int y = 1; y < dims[1] - 1; ++y )
@@ -434,25 +433,22 @@ Contour computeWithEdgeFilter( vtkImageData* mask, int zSlice )
             if( *v )
             {
                 *v = 0;
-                result.push_back( cv::Point2d( x, y) );
+                Contour contour;
+                contour.push_back( cv::Point2d( x, y) );
 
                 short* down = reinterpret_cast<short*>( maskContour->GetScalarPointer( x, y + 1, zSlice ) );
                 if( !*down )
                 {
-                    contourWalk( x+1, y, zSlice, maskContour, result );
+                    contourWalk( x+1, y, zSlice, maskContour, contour );
                 }
                 else
                 {
-                    contourWalk( x, y+1, zSlice, maskContour, result );
+                    contourWalk( x, y+1, zSlice, maskContour, contour );
                 }
-                // TODO: make this work for more than one component withing the mask
-                // maybe return a vector of contours
-                breaked = true;
-                break;
+                if( contour.size() > sizeThreshold )
+                    result.push_back( contour );
             }
         }
-        if( breaked )
-            break;
     }
     return result;
 }

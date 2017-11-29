@@ -83,9 +83,9 @@ int main( int argc, char** argv )
     vtkSmartPointer<vtkImageData> mask =
             DICOMLoaderVTK::loadDICOM( std::string( argv[2] ) );
 
-    std::cout << "start bilateral filtering" << std::endl;
-    image = Denoising::bilateralFilter( image, 2, 100 );
-    std::cout << "finshed bilateral filtering" << std::endl;
+    //std::cout << "start bilateral filtering" << std::endl;
+    //image = Denoising::bilateralFilter( image, 2, 100 );
+    //std::cout << "finshed bilateral filtering" << std::endl;
 
     vtkSmartPointer<vtkImageMapper> imageMapper =
             vtkSmartPointer<vtkImageMapper>::New();
@@ -119,12 +119,17 @@ int main( int argc, char** argv )
     double sigma = 7;
     double iterations = 1000;
 
-    std::vector<cv::Point2d> contour = ContourFromMask::compute( mask, 0 );
+    std::vector< std::vector<cv::Point2d> > contours = ContourFromMask::computeWithEdgeFilter( mask, 0 );
+    std::cout << "contours " << contours.size() << std::endl;
+    std::vector<cv::Point2d> contour = contours[0];
     std::cout << "contour.size() = " << contour.size() << std::endl;
-    contour = ContourFromMask::simplify( contour, simplficationEps );
-    std::cout << "simplified contour.size() = " << contour.size() << std::endl;
-    contour = ContourFromMask::resample( contour, nPoints );
-    std::cout << "resampled contour.size() = " << contour.size() << std::endl;
+    if( contour.size() > nPoints )
+    {
+        contour = ContourFromMask::simplify( contour, simplficationEps );
+        std::cout << "simplified contour.size() = " << contour.size() << std::endl;
+        contour = ContourFromMask::resample( contour, nPoints );
+        std::cout << "resampled contour.size() = " << contour.size() << std::endl;
+    }
 
     vtkSmartPointer<vtkPolyData> polyData =
             createPolydataLine( contour );
@@ -153,19 +158,19 @@ int main( int argc, char** argv )
 
     activeContour.setStartPoints( contour );
 
-    //activeContour.init();
+    activeContour.init();
     std::cerr << "start iteration" << std::endl;
-    activeContour.compute();
-    //for (int i = 0; i < iterations; i++)
-    //{
-    //    updatePolydata( polyData, activeContour.step() );
-    //    polyData->Modified();
-    //    mapper->Modified();
-    //    renderer->Modified();
-    //    if( i % 1 == 0 )
-    //        renderWindow->Render();
-    //
-    //}
+    //activeContour.compute();
+    for (int i = 0; i < iterations; i++)
+    {
+        updatePolydata( polyData, activeContour.step() );
+        polyData->Modified();
+        mapper->Modified();
+        renderer->Modified();
+        if( i % 1 == 0 )
+            renderWindow->Render();
+
+    }
     updatePolydata( polyData, activeContour.step() );
     polyData->Modified();
     mapper->Modified();
