@@ -124,6 +124,7 @@ set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               ActiveContour.cpp
               ContourFromMask.cpp
               Helpers/Converter.cpp
+              Helpers/Validator.cpp
               ContourToMask.cpp )
 
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
@@ -135,6 +136,7 @@ set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               ActiveContour.h
               Helpers/Converter.h
               Helpers/TypeDefinitions.h
+              Helpers/Validator
               ContourFromMask.h
               ContourToMask.h )
 
