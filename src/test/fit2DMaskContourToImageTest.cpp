@@ -22,6 +22,8 @@
 #include <opencv2/highgui.hpp>
 
 #include <Denoising.h>
+#include "Helpers/Validator.h"
+#include "Helpers/Converter.h"
 
 vtkSmartPointer<vtkPolyData> createPolydataLine( std::vector<cv::Point2d> const & v )
 {
@@ -71,9 +73,9 @@ void updatePolydata( vtkSmartPointer<vtkPolyData> polyData, std::vector<cv::Poin
 
 int main( int argc, char** argv )
 {
-    if( argc < 3 )
+    if( argc < 4 )
     {
-        std::cerr << "usage: " << argv[0] << "[pathToDatasetImage] [pathToMaskImage]" << std::endl;
+        std::cerr << "usage: " << argv[0] << "[pathToDatasetImage] [pathToMaskImage] [pathToGroundTruth]" << std::endl;
         return -1;
     }
 
@@ -82,6 +84,9 @@ int main( int argc, char** argv )
 
     vtkSmartPointer<vtkImageData> mask =
             DICOMLoaderVTK::loadDICOM( std::string( argv[2] ) );
+
+    vtkSmartPointer<vtkImageData> groundTruth =
+            DICOMLoaderVTK::loadDICOM( std::string( argv[3] ) );
 
     //std::cout << "start bilateral filtering" << std::endl;
     //image = Denoising::bilateralFilter( image, 2, 100 );
@@ -120,6 +125,7 @@ int main( int argc, char** argv )
     double iterations = 1000;
 
     std::vector< std::vector<cv::Point2d> > contours = ContourFromMask::computeWithEdgeFilter( mask, 0 );
+    std::vector< std::vector<cv::Point2d> > groundTruthContours = ContourFromMask::computeWithEdgeFilter( groundTruth, 0 );
     std::cout << "contours " << contours.size() << std::endl;
     std::vector<cv::Point2d> contour = contours[0];
     std::cout << "contour.size() = " << contour.size() << std::endl;
@@ -158,27 +164,37 @@ int main( int argc, char** argv )
 
     activeContour.setStartPoints( contour );
 
-    activeContour.init();
+    //activeContour.init();
     std::cerr << "start iteration" << std::endl;
-    //activeContour.compute();
-    for (int i = 0; i < iterations; i++)
-    {
-        updatePolydata( polyData, activeContour.step() );
-        polyData->Modified();
-        mapper->Modified();
-        renderer->Modified();
-        if( i % 1 == 0 )
-            renderWindow->Render();
-
-    }
-    updatePolydata( polyData, activeContour.step() );
+    Contour finalContour = activeContour.compute();
+    //for (int i = 0; i < iterations; i++)
+    //{
+    //    updatePolydata( polyData, activeContour.step() );
+    //    polyData->Modified();
+    //    mapper->Modified();
+    //    renderer->Modified();
+    //    if( i % 1 == 0 )
+    //        renderWindow->Render();
+    //
+    //}
+    //Contour finalContour =
+    updatePolydata( polyData, finalContour );
     polyData->Modified();
     mapper->Modified();
     renderer->Modified();
     renderWindow->Render();
     std::cerr << "iteration finished" << std::endl;
 
-    cv::imwrite( "mask.jpg", ContourToMask::compute( activeContour.step(), image->GetDimensions() ) );
+    cv::imwrite( "mask.jpg", ContourToMask::compute( finalContour, image->GetDimensions() ) );
+
+    std::cerr << "Average euclidean distance: "
+              << Validator::averageEuclideanContourDistance( finalContour, groundTruthContours[0] )
+              << std::endl;
+
+    MaskType2D::Pointer finalMask = ContourToMask::computeITK( finalContour, image->GetDimensions() );
+    std::cerr << "Dice Coeff: "
+              << Validator::diceCoeff2DSlice( finalMask, Converter::ConvertVTKToITK<MaskType2D>( groundTruth ) )
+              << std::endl;
 
     renderWindowInteractor->Start();
 
