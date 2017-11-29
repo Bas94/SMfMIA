@@ -14,6 +14,7 @@
 #include "fileHelpers/DICOMLoaderVTK.h"
 #include "fileHelpers/FileDialog.h"
 #include "Denoising.h"
+#include "BiasCorrection.h"
 
 /*!
  * \brief The ProgramOptions struct holds all the data
@@ -95,6 +96,9 @@ void loadData( ProgramOptions const & options,
     std::cout << "open dataset: " << options.datasetDirectory << std::endl;
     // load the dataset
     imageData = DICOMLoaderVTK::loadDICOMSeries( options.datasetDirectory );
+	//std::cout << "dataset dimension: " << imageData->GetDimensions()[0] << "; "
+	//	<< imageData->GetDimensions()[1] << "; "
+	//	<< imageData->GetDimensions()[2] << std::endl;
 
     imageMasks.clear();
     // load mask data for every given path
@@ -104,6 +108,9 @@ void loadData( ProgramOptions const & options,
         vtkSmartPointer<vtkImageData> imageMask =
                 DICOMLoaderVTK::loadDICOMSeries( options.maskDirectories[i] );
         imageMasks.push_back( imageMask );
+		//std::cout << "mask dimension: " << imageMask->GetDimensions()[0] << "; "
+		//	<< imageMask->GetDimensions()[1] << "; "
+		//	<< imageMask->GetDimensions()[2] << std::endl;
     }
 }
 
@@ -165,10 +172,18 @@ int main( int argc, char** argv )
     loadData( options, imageData, imageMasks );
 	
 	// denoising image
-	vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,0.5,4);
+	//vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,0.5,4);
+
+	// correction of shading/bias artefact
+	itk::Array<double> means(1);
+	means.SetElement(0, 550);
+	itk::Array<double> sigmas(1);
+	sigmas.SetElement(0, 410);
+	vtkSmartPointer<vtkImageData> smoothedImageData2 = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), means, sigmas);
    
 	// display everything
-    displayImages(smoothedImageData, imageMasks );
+	imageMasks.clear();
+    displayImages(smoothedImageData2, imageMasks );
 	displayImages(imageData, imageMasks);
 
     return 0;
