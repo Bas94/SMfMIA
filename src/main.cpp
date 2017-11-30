@@ -172,18 +172,16 @@ int main( int argc, char** argv )
     loadData( options, imageData, imageMasks );
 	
 	// denoising image
-	//vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,0.5,4);
+	vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,2,100);
 
 	// correction of shading/bias artefact
 	itk::Array<double> means(1);
 	means.SetElement(0, 550);
 	itk::Array<double> sigmas(1);
 	sigmas.SetElement(0, 410);
-	vtkSmartPointer<vtkImageData> smoothedImageData2 = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), means, sigmas);
+	vtkSmartPointer<vtkImageData> biasCorrectedImageData = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), means, sigmas);
    
 	// display everything
-	imageMasks.clear();
-    displayImages(smoothedImageData2, imageMasks );
 	displayImages(imageData, imageMasks);
 
     return 0;
