@@ -13,9 +13,7 @@ namespace Denoising
 	
 	vtkSmartPointer<vtkImageData> bilateralFilter(vtkSmartPointer<vtkImageData> imageData, double domainSigma, double rangeSigma)
 	{
-		ImageType::Pointer img = ImageType::New();
-		void * pimg = &img;
-		Converter::ConvertVTKToITK(pimg,imageData);
+        ImageType::Pointer img = Converter::ConvertVTKToITK<ImageType>(imageData);
 
 		typedef itk::BilateralImageFilter<ImageType, ImageType >	BilateralFilterType;
 		BilateralFilterType::Pointer bilateralFilter = BilateralFilterType::New();
