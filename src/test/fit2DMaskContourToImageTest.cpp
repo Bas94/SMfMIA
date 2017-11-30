@@ -88,9 +88,9 @@ int main( int argc, char** argv )
     vtkSmartPointer<vtkImageData> groundTruth =
             DICOMLoaderVTK::loadDICOM( std::string( argv[3] ) );
 
-    //std::cout << "start bilateral filtering" << std::endl;
-    //image = Denoising::bilateralFilter( image, 2, 100 );
-    //std::cout << "finshed bilateral filtering" << std::endl;
+    std::cout << "start bilateral filtering" << std::endl;
+    image = Denoising::bilateralFilter( image, 2, 100 );
+    std::cout << "finshed bilateral filtering" << std::endl;
 
     vtkSmartPointer<vtkImageMapper> imageMapper =
             vtkSmartPointer<vtkImageMapper>::New();
@@ -118,11 +118,11 @@ int main( int argc, char** argv )
     //Snake parameters
     int nPoints = 500;
     double simplficationEps = 1;
-    double alpha = 3;
-    double beta = 1;
-    double gamma = 0.1;
-    double sigma = 7;
-    double iterations = 1000;
+    double elasticity = 10;
+    double stiffness = 500;
+    double gamma = 0.2;
+    double sigma = 2;
+    double iterations = 2000;
 
     std::vector< std::vector<cv::Point2d> > contours = ContourFromMask::computeWithEdgeFilter( mask, 0 );
     std::vector< std::vector<cv::Point2d> > groundTruthContours = ContourFromMask::computeWithEdgeFilter( groundTruth, 0 );
@@ -155,8 +155,8 @@ int main( int argc, char** argv )
 
 
     ActiveContour activeContour;
-    activeContour.setElasticity( alpha );
-    activeContour.setStiffness( beta );
+    activeContour.setElasticity( elasticity );
+    activeContour.setStiffness( stiffness );
     activeContour.setIterationSpeed( gamma );
     activeContour.setEdgeSoothingSigma( sigma );
     activeContour.setMaxIterations( iterations );
@@ -164,20 +164,25 @@ int main( int argc, char** argv )
 
     activeContour.setStartPoints( contour );
 
-    //activeContour.init();
+
     std::cerr << "start iteration" << std::endl;
+
+#if 1
     Contour finalContour = activeContour.compute();
-    //for (int i = 0; i < iterations; i++)
-    //{
-    //    updatePolydata( polyData, activeContour.step() );
-    //    polyData->Modified();
-    //    mapper->Modified();
-    //    renderer->Modified();
-    //    if( i % 1 == 0 )
-    //        renderWindow->Render();
-    //
-    //}
-    //Contour finalContour =
+#else
+    activeContour.init();
+    for (int i = 0; i < iterations; i++)
+    {
+        updatePolydata( polyData, activeContour.step() );
+        polyData->Modified();
+        mapper->Modified();
+        renderer->Modified();
+        if( i % 1 == 0 )
+            renderWindow->Render();
+
+    }
+    Contour finalContour = activeContour.step();
+#endif
     updatePolydata( polyData, finalContour );
     polyData->Modified();
     mapper->Modified();
@@ -194,6 +199,10 @@ int main( int argc, char** argv )
     MaskType2D::Pointer finalMask = ContourToMask::computeITK( finalContour, image->GetDimensions() );
     std::cerr << "Dice Coeff: "
               << Validator::diceCoeff2DSlice( finalMask, Converter::ConvertVTKToITK<MaskType2D>( groundTruth ) )
+              << std::endl;
+
+    std::cerr << "Dice Coeff without optimization: "
+              << Validator::diceCoeff2DSlice( Converter::ConvertVTKToITK<MaskType2D>( mask ), Converter::ConvertVTKToITK<MaskType2D>( groundTruth ) )
               << std::endl;
 
     renderWindowInteractor->Start();
