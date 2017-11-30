@@ -31,7 +31,7 @@ public:
      */
     void AddMask( vtkSmartPointer<vtkImageData> mask,
                   double colR = 0.3,
-                  double colG = 0.0,
+                  double colG = 0.2,
                   double colB = 0.0,
                   double colAlpha = 0.2 );
 
