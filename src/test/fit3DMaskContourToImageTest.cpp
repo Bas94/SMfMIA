@@ -2,25 +2,25 @@
 #include "ContourFromMask.h"
 #include "ActiveContour.h"
 #include "ContourToMask.h"
+#include "Helpers/Validator.h"
+#include "Helpers/Converter.h"
 
 #include <vtkExtractVOI.h>
 
 #include <opencv2/highgui.hpp>
-#include "SMfMIAImageViewer.h"
-#include "SMfMIAInteractorStyle.h"
 #include <vtkRenderer.h>
 
 int main( int argc, char** argv )
 {
-    if( argc < 3 )
+    if( argc < 4 )
     {
-        std::cerr << "usage: " << argv[0] << " [pathToDatasetImage] [pathToMaskImage]" << std::endl;
+        std::cerr << "usage: " << argv[0] << " [pathToDatasetImage] [pathToMaskImage] [pathToGroundTruth]" << std::endl;
         return -1;
     }
 
     int nPoints = 500;
     double simplficationEps = 1;
-    double elasticity = 1;
+    double elasticity = 10;
     double stiffness = 500;
     double speed = 0.2;
     double smoothingSigma = 2;
@@ -32,6 +32,9 @@ int main( int argc, char** argv )
 
     vtkSmartPointer<vtkImageData> mask =
             DICOMLoaderVTK::loadDICOMSeries( std::string( argv[2] ) );
+
+    vtkSmartPointer<vtkImageData> groundTruth =
+            DICOMLoaderVTK::loadDICOMSeries( std::string( argv[3] ) );
 
     int* dim = mask->GetDimensions();
 
@@ -117,4 +120,16 @@ int main( int argc, char** argv )
         cv::imwrite( ss.str(), sliceMask );
         masksSlicewise.push_back( sliceMask );
     }
+
+    std::cerr << "computing validation" << std::endl;
+    double diceCoeffOptimized =
+            Validator::diceCoeff3DVolume( ContourToMask::computeITK( finalContoursPerSclice, mask->GetDimensions() ),
+                                          Converter::ConvertVTKToITK<MaskType>( groundTruth ) );
+    double diceCoeffBefore =
+            Validator::diceCoeff3DVolume( Converter::ConvertVTKToITK<MaskType>( mask ),
+                                          Converter::ConvertVTKToITK<MaskType>( groundTruth ) );
+
+    std::cerr << "diceCoeff before optimization: " << diceCoeffBefore << std::endl;
+    std::cerr << "diceCoeff after optimization: " << diceCoeffOptimized << std::endl;
+
 }

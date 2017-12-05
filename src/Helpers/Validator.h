@@ -6,6 +6,8 @@
 namespace Validator
 {
     double diceCoeff2DSlice( MaskType2D::Pointer mask, MaskType2D::Pointer groundtruth );
+    double diceCoeff3DVolume( MaskType::Pointer mask, MaskType::Pointer groundtruth );
+
     double averageEuclideanContourDistance( Contour const & contour, Contour const & groundtruth );
 }
 
