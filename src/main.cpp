@@ -108,68 +108,112 @@ void loadData( ProgramOptions const & options,
 }
 
 // Function that display and enable to interact with DICOMs
-void displayImages( vtkSmartPointer<vtkImageData> imageData,
-                    std::vector< vtkSmartPointer<vtkImageData> > imageMasks )
+void displayTwoImages( std::vector<vtkSmartPointer<vtkImageData>> imageData)
 {
     // Visualize
     vtkSmartPointer<SMfMIAImageViewer> imageViewer =
         vtkSmartPointer<SMfMIAImageViewer>::New();
-    for( size_t i = 0; i < imageMasks.size(); ++i )
-    {
-        imageViewer->AddMask( imageMasks[i],
-                              colorTable[i % colorTableSize][0],
-                              colorTable[i % colorTableSize][1],
-                              colorTable[i % colorTableSize][2],
-                              0.2 );
-    }
-    imageViewer->SetInputData( imageData );
+	// Creats an interactor
+	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+		vtkSmartPointer<vtkRenderWindowInteractor>::New();
 
-    // Creats an interactor
-    vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
-        vtkSmartPointer<vtkRenderWindowInteractor>::New();
+	// Usage of own InteractionStyle
+	vtkSmartPointer<SMfMIAInteractorStyle> myInteractorStyle =
+		vtkSmartPointer<SMfMIAInteractorStyle>::New();
+	myInteractorStyle->SetImageViewer(imageViewer);
 
-    // Usage of own InteractionStyle
-    vtkSmartPointer<SMfMIAInteractorStyle> myInteractorStyle =
-        vtkSmartPointer<SMfMIAInteractorStyle>::New();
-    myInteractorStyle->SetImageViewer(imageViewer);
+	imageViewer->SetupInteractor(renderWindowInteractor);
 
-    imageViewer->SetupInteractor(renderWindowInteractor);
+	renderWindowInteractor->SetInteractorStyle(myInteractorStyle);	
+	// Define viewport ranges
+	double xmins[2] = { 0,.5};
+	double xmaxs[2] = { 0.5,1};
+	double ymins[2] = { 0,0};
+	double ymaxs[2] = { 1,1};
+	
+	for (unsigned i = 0; i < imageData.size(); i++)
+	{
+		imageViewer->SetInputData(imageData[i]);
+	
+		imageViewer->GetRenderer()->SetViewport(xmins[i], ymins[i], xmaxs[i], ymaxs[i]);		
 
-    renderWindowInteractor->SetInteractorStyle(myInteractorStyle);
-
-    imageViewer->SetSize(800, 600);
-    imageViewer->Render();
-    imageViewer->GetRenderer()->ResetCamera();
-    imageViewer->Render();
-    imageViewer->SetSliceOrientationToXY();
-
+		imageViewer->SetSize(800, 600);
+		imageViewer->Render();
+		imageViewer->GetRenderer()->ResetCamera();
+		imageViewer->Render();
+	}
+	
+		
+		imageViewer->SetSliceOrientationToXY();
     renderWindowInteractor->Start();
+}
+
+// Function that display and enable to interact with DICOMs
+void displayImages(vtkSmartPointer<vtkImageData> imageData,
+	std::vector< vtkSmartPointer<vtkImageData> > imageMasks)
+{
+	// Visualize
+	vtkSmartPointer<SMfMIAImageViewer> imageViewer =
+		vtkSmartPointer<SMfMIAImageViewer>::New();
+	for (size_t i = 0; i < imageMasks.size(); ++i)
+	{
+		imageViewer->AddMask(imageMasks[i],
+			colorTable[i % colorTableSize][0],
+			colorTable[i % colorTableSize][1],
+			colorTable[i % colorTableSize][2],
+			0.2);
+	}
+	imageViewer->SetInputData(imageData);
+
+	// Creats an interactor
+	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+		vtkSmartPointer<vtkRenderWindowInteractor>::New();
+
+	// Usage of own InteractionStyle
+	vtkSmartPointer<SMfMIAInteractorStyle> myInteractorStyle =
+		vtkSmartPointer<SMfMIAInteractorStyle>::New();
+	myInteractorStyle->SetImageViewer(imageViewer);
+
+	imageViewer->SetupInteractor(renderWindowInteractor);
+
+	renderWindowInteractor->SetInteractorStyle(myInteractorStyle);
+
+	imageViewer->SetSize(800, 600);
+	imageViewer->Render();
+	imageViewer->GetRenderer()->ResetCamera();
+	imageViewer->Render();
+	imageViewer->SetSliceOrientationToXY();
+
+	renderWindowInteractor->Start();
 }
 
 
 
-
-int main( int argc, char** argv )
+int main(int argc, char** argv)
 {
-    ProgramOptions options;
+	ProgramOptions options;
 
-    // parse input and get all directories
-    if( !parseInput( argc, argv, options ) )
-    {
-        return -1;
-    }
+	// parse input and get all directories
+	if (!parseInput(argc, argv, options))
+	{
+		return -1;
+	}
 
-    // load the whole data from the given directories
-    vtkSmartPointer<vtkImageData> imageData;
-    std::vector< vtkSmartPointer<vtkImageData> > imageMasks;
-    loadData( options, imageData, imageMasks );
-	
+	// load the whole data from the given directories
+	vtkSmartPointer<vtkImageData> imageData;
+	std::vector< vtkSmartPointer<vtkImageData> > imageMasks;
+	loadData(options, imageData, imageMasks);
+
 	// denoising image
 	vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,2,100);
-   
+
 	// display everything
-    displayImages(smoothedImageData, imageMasks );
-	displayImages(imageData, imageMasks);
+	//displayImages(smoothedImageData, imageMasks );
+
+	std::vector< vtkSmartPointer<vtkImageData> > imageDataArray;
+	imageDataArray.push_back(imageData);
+	imageDataArray.push_back(smoothedImageData);
+	displayTwoImages(imageDataArray);
 
     return 0;
 }
