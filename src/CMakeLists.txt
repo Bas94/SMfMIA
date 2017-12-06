@@ -159,3 +159,14 @@ target_link_libraries( fit2DMaskContourToImageTest ${PROJECT_LIBRARIES} )
 
 add_executable( fit3DMaskContourToImageTest test/fit3DMaskContourToImageTest.cpp ${SRC_LIST} ${HDR_LIST} )
 target_link_libraries( fit3DMaskContourToImageTest ${PROJECT_LIBRARIES} )
+
+add_executable(levelSetTest test/levelSetTest.cpp ${SRC_LIST} ${HDR_LIST} )
+target_link_libraries( levelSetTest ${PROJECT_LIBRARIES} )
+
+add_executable(levelSetCopyPasteTest test/levelSetCopyPasteTest.cpp 
+									SMfMIAInteractorStyle.cpp
+                                    SMfMIAInteractorStyle.h
+									SMfMIAImageViewer.cpp
+									SMfMIAImageViewer.h)
+target_link_libraries( levelSetCopyPasteTest ${PROJECT_LIBRARIES} )
+
