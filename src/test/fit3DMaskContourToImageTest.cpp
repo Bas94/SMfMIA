@@ -2,26 +2,29 @@
 #include "ContourFromMask.h"
 #include "ActiveContour.h"
 #include "ContourToMask.h"
+#include "Helpers/Validator.h"
+#include "Helpers/Converter.h"
 
 #include <vtkExtractVOI.h>
 
 #include <opencv2/highgui.hpp>
+#include <vtkRenderer.h>
 
 int main( int argc, char** argv )
 {
-    if( argc < 3 )
+    if( argc < 4 )
     {
-        std::cerr << "usage: " << argv[0] << " [pathToDatasetImage] [pathToMaskImage]" << std::endl;
+        std::cerr << "usage: " << argv[0] << " [pathToDatasetImage] [pathToMaskImage] [pathToGroundTruth]" << std::endl;
         return -1;
     }
 
     int nPoints = 500;
     double simplficationEps = 1;
-    double elasticity = 3;
-    double stiffness = 1;
-    double speed = 0.1;
-    double smoothingSigma = 7;
-    double iterations = 1000;
+    double elasticity = 10;
+    double stiffness = 500;
+    double speed = 0.2;
+    double smoothingSigma = 2;
+    double iterations = 2000;
 
     std::cerr << "load data" << std::endl;
     vtkSmartPointer<vtkImageData> image =
@@ -30,13 +33,23 @@ int main( int argc, char** argv )
     vtkSmartPointer<vtkImageData> mask =
             DICOMLoaderVTK::loadDICOMSeries( std::string( argv[2] ) );
 
+    vtkSmartPointer<vtkImageData> groundTruth =
+            DICOMLoaderVTK::loadDICOMSeries( std::string( argv[3] ) );
+
     int* dim = mask->GetDimensions();
 
     std::cerr << "find initial contours" << std::endl;
     std::vector< std::vector<Contour> > contoursPerSclice;
     for( int i = 0; i < mask->GetDimensions()[2]; ++i )
     {
-        std::vector<Contour> contoursInSlice = ContourFromMask::computeWithEdgeFilter( mask, i );
+        vtkSmartPointer<vtkExtractVOI> voiExtractor =
+                vtkSmartPointer<vtkExtractVOI>::New();
+        voiExtractor->SetInputData( mask );
+        voiExtractor->SetVOI( 0, dim[0]-1, 0, dim[1]-1, i, i );
+        voiExtractor->Update();
+        voiExtractor->GetOutput()->SetExtent( 0, dim[0]-1, 0, dim[1]-1, 0, 0 );
+
+        std::vector<Contour> contoursInSlice = ContourFromMask::computeWithEdgeFilter( voiExtractor->GetOutput(), 0 );
         for( size_t j = 0; j < contoursInSlice.size(); ++j )
         {
             // if number of points is small enough, don't simplify
@@ -57,6 +70,13 @@ int main( int argc, char** argv )
     std::vector<std::vector<ActiveContour> > activeContourAlgorithms( contoursPerSclice.size() );
     for( size_t i = 0; i < contoursPerSclice.size(); ++i )
     {
+        vtkSmartPointer<vtkExtractVOI> voiExtractor =
+                vtkSmartPointer<vtkExtractVOI>::New();
+        voiExtractor->SetInputData( image );
+        voiExtractor->SetVOI( 0, dim[0]-1, 0, dim[1]-1, i, i );
+        voiExtractor->Update();
+        voiExtractor->GetOutput()->SetExtent( 0, dim[0]-1, 0, dim[1]-1, 0, 0 );
+
         activeContourAlgorithms[i].resize( contoursPerSclice[i].size() );
         for( size_t j = 0; j < contoursPerSclice[i].size(); ++j )
         {
@@ -68,12 +88,6 @@ int main( int argc, char** argv )
             activeContour.setEdgeSoothingSigma( smoothingSigma );
             activeContour.setStartPoints( contoursPerSclice[i][j] );
 
-            vtkSmartPointer<vtkExtractVOI> voiExtractor =
-                    vtkSmartPointer<vtkExtractVOI>::New();
-            voiExtractor->SetInputData( image );
-            voiExtractor->SetVOI( 0, dim[0]-1, 0, dim[1]-1, i, i );
-            voiExtractor->Update();
-            voiExtractor->GetOutput()->SetExtent( 0, dim[0], 0, dim[1], 0, 0 );
             activeContour.setImage( voiExtractor->GetOutput() );
         }
     }
@@ -95,15 +109,27 @@ int main( int argc, char** argv )
     // covert curves to masks
     for( size_t i = 0; i < finalContoursPerSclice.size(); ++i )
     {
-        cv::Mat3b sliceMask( dim[1], dim[0] );
+        cv::Mat3b sliceMask( dim[1], dim[0], cv::Vec3b( 0, 0, 0 ) );
         for( size_t j = 0; j < finalContoursPerSclice[i].size(); ++j )
         {
-            std::stringstream ss;
-            ss << "mask" << i << "-" << j << ".jpg";
-            cv::Mat3b mask = ContourToMask::compute( finalContoursPerSclice[i][j], dim );;
-            cv::imwrite( ss.str(), mask );
-            sliceMask += mask;
+            cv::Mat3b mask = ContourToMask::compute( finalContoursPerSclice[i][j], dim );
+            cv::add( sliceMask, mask, sliceMask );
         }
+        std::stringstream ss;
+        ss << "mask" << std::setfill('0') << std::setw(2) << i << ".jpg";
+        cv::imwrite( ss.str(), sliceMask );
         masksSlicewise.push_back( sliceMask );
     }
+
+    std::cerr << "computing validation" << std::endl;
+    double diceCoeffOptimized =
+            Validator::diceCoeff3DVolume( ContourToMask::computeITK( finalContoursPerSclice, mask->GetDimensions() ),
+                                          Converter::ConvertVTKToITK<MaskType>( groundTruth ) );
+    double diceCoeffBefore =
+            Validator::diceCoeff3DVolume( Converter::ConvertVTKToITK<MaskType>( mask ),
+                                          Converter::ConvertVTKToITK<MaskType>( groundTruth ) );
+
+    std::cerr << "diceCoeff before optimization: " << diceCoeffBefore << std::endl;
+    std::cerr << "diceCoeff after optimization: " << diceCoeffOptimized << std::endl;
+
 }
