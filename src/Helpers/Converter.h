@@ -31,6 +31,17 @@ namespace Converter
         return filter->GetOutput();
     }
 
+	template<typename itkImageType>
+	vtkSmartPointer<vtkImageData> ConvertITKToVTK(typename itkImageType::Pointer itkImagePointer)
+	{
+		itk::ImageToVTKImageFilter<itkImageType>::Pointer connector = itk::ImageToVTKImageFilter<itkImageType>::New();
 
-	vtkSmartPointer<vtkImageData> ConvertITKToVTK(ImageType::Pointer itkImagePointer);
+		connector->SetInput(itkImagePointer);
+		connector->Update();
+
+		vtkSmartPointer<vtkImageData> vtkImage = vtkSmartPointer<vtkImageData>::New();
+		vtkImage->DeepCopy(connector->GetOutput());
+
+		return vtkImage;
+	}
 }
