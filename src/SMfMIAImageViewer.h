@@ -1,6 +1,8 @@
 #ifndef SMFMIA_IMAGE_VIEWER
 #define SMFMIA_IMAGE_VIEWER
 
+#include "SMfMIAInteractorStyle.h"
+
 #include <vtkResliceImageViewer.h>
 #include <vtkSmartPointer.h>
 #include <vector>
@@ -19,7 +21,8 @@ public:
     static SMfMIAImageViewer *New();
     // do some library registration and stuff - needed by VTK library design
     vtkTypeMacro(SMfMIAImageViewer,vtkResliceImageViewer);
-
+	
+	static void Show(vtkSmartPointer<vtkImageData > imageData);
     /*!
      * \brief AddMask adds a mask overly above the given dataset with
      *        a given color
@@ -34,6 +37,8 @@ public:
                   double colG = 0.0,
                   double colB = 0.0,
                   double colAlpha = 0.2 );
+
+	virtual void Render();
 
 protected:
     // constructor to create the object
@@ -50,6 +55,7 @@ protected:
     // updates the current viewed slice if another slice was requested
     virtual void UpdateDisplayExtent();
 
+	
     // all the data needed to view an overlay:
 
     // all mask data
@@ -60,6 +66,8 @@ protected:
     std::vector< vtkSmartPointer<vtkLookupTable> > LookupTables;
     // all color mappers which do the actual rendering step of coloring the mask
     std::vector< vtkSmartPointer<vtkImageMapToColors> > MapColors;
+
+	std::vector<vtkSmartPointer<vtkImageData>> m_ImageData;
 };
 
 #endif // SMFMIA_IMAGE_VIEWER
