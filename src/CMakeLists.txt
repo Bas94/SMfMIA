@@ -171,6 +171,8 @@ add_executable(levelSetCopyPasteTest test/levelSetCopyPasteTest.cpp
 									SMfMIAInteractorStyle.cpp
                                     SMfMIAInteractorStyle.h
 									SMfMIAImageViewer.cpp
-									SMfMIAImageViewer.h)
+									SMfMIAImageViewer.h
+									 Helpers/Converter.cpp
+									 Helpers/Converter.h)
 target_link_libraries( levelSetCopyPasteTest ${PROJECT_LIBRARIES} )
 
