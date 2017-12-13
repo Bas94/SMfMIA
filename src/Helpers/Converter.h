@@ -34,7 +34,7 @@ namespace Converter
 	template<typename itkImageType>
 	vtkSmartPointer<vtkImageData> ConvertITKToVTK(typename itkImageType::Pointer itkImagePointer)
 	{
-		itk::ImageToVTKImageFilter<itkImageType>::Pointer connector = itk::ImageToVTKImageFilter<itkImageType>::New();
+        typename itk::ImageToVTKImageFilter<itkImageType>::Pointer connector = itk::ImageToVTKImageFilter<itkImageType>::New();
 
 		connector->SetInput(itkImagePointer);
 		connector->Update();
