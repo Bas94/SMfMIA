@@ -15,14 +15,13 @@ namespace BiasCorrection
 	{
 		//convert imageData from VTK to ITK image
 		ImageType::Pointer img = ImageType::New();
-		void * pimg = &img;
-		Converter::ConvertVTKToITK(pimg, imageData);
+		img = Converter::ConvertVTKToITK<ImageType>(imageData);
 
 
 		//convert maskData from VTK to ITK image
 		ImageType::Pointer mask = ImageType::New();
 		void * pmask = &mask;
-		Converter::ConvertVTKToITK(pmask, maskData);
+		mask = Converter::ConvertVTKToITK<ImageType>(maskData);
 
 
 		//typedef itk::N4BiasFieldCorrectionImageFilter< ImageType, ImageType, ImageType > ShadingFilterType;

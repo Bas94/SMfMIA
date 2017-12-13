@@ -5,6 +5,7 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 #include <vtkImageData.h>
+#include <vtkImageCast.h>
 
 #include <string.h>
 
@@ -170,18 +171,42 @@ int main( int argc, char** argv )
     vtkSmartPointer<vtkImageData> imageData;
     std::vector< vtkSmartPointer<vtkImageData> > imageMasks;
     loadData( options, imageData, imageMasks );
+
+	////type casting für matlab-erstellte Daten
+	vtkSmartPointer<vtkImageData> imageMaskCasted;
+
+	//std::cout << "scalar range: " << imageData->GetScalarRange()[0] << " " << imageData->GetScalarRange()[1] << std::endl;
+
+	//vtkSmartPointer<vtkImageCast> imageCaster = vtkSmartPointer<vtkImageCast>::New();
+	//imageCaster->SetInputData(imageData);
+	////imageCaster->SetOutputScalarTypeToUnsignedInt();
+	//imageCaster->SetOutputScalarTypeToShort();
+	//imageCaster->Update();
+	//imageData = imageCaster->GetOutput();
+
+	//std::cout << "scalar range: " << imageData->GetScalarRange()[0] << " " << imageData->GetScalarRange()[1] << std::endl;
+
+	//vtkSmartPointer<vtkImageCast> imageCasterMask = vtkSmartPointer<vtkImageCast>::New();
+	//imageCasterMask->SetInputData(imageMasks.at(0));
+	////imageCasterMask->SetOutputScalarTypeToUnsignedInt();
+	//imageCasterMask->SetOutputScalarTypeToShort();
+	//imageCasterMask->Update();
+	//imageMaskCasted = imageCasterMask->GetOutput();
+	imageMaskCasted = imageMasks.at(0);
 	
 	// denoising image
 	vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,2,100);
 
 	// correction of shading/bias artefact
 	itk::Array<double> means(1);
-	means.SetElement(0, 550);
+	means.SetElement(0, 957);
 	itk::Array<double> sigmas(1);
-	sigmas.SetElement(0, 410);
-	vtkSmartPointer<vtkImageData> biasCorrectedImageData = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), means, sigmas);
+	sigmas.SetElement(0, 900);
+	//vtkSmartPointer<vtkImageData> biasCorrectedImageData = BiasCorrection::shadingFilter(imageData, imageMaskCasted, means, sigmas);
    
 	// display everything
+	imageMasks.clear();
+	//displayImages(biasCorrectedImageData,imageMasks);
 	displayImages(imageData, imageMasks);
 
     return 0;
