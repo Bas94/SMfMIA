@@ -126,7 +126,8 @@ set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               Helpers/Converter.cpp
               Helpers/Validator.cpp
               ContourToMask.cpp
-			  BiasCorrection.cpp )
+              BiasCorrection.cpp
+              LevelSetSeg.cpp )
 
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
@@ -140,7 +141,8 @@ set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               Helpers/Validator.h
               ContourFromMask.h
               ContourToMask.h
-              BiasCorrection.h )
+              BiasCorrection.h
+              LevelSetSeg.h )
 
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})

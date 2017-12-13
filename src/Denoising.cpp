@@ -24,6 +24,6 @@ namespace Denoising
 		
 		ImageType::Pointer image = bilateralFilter->GetOutput();		
 
-		return Converter::ConvertITKToVTK(image);
+        return Converter::ConvertITKToVTK<ImageType>(image);
 	}
 }
