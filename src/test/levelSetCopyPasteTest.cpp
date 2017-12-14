@@ -23,18 +23,18 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}*/
 
-	const char * inputFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\p01\\0_pre\\00_data\\export0002.dcm";
-	const char * outputFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\p01\\0_pre\\00_data\\export0002Output.dcm";
-	const char * inputMaskFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\p01\\0_pre\\01_seg\\export0002.dcm";
-	const int seedPosX = 59;
-	const int seedPosY = 59;
+	const char * inputFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\example\\SegmentWithGeodesicActiveContourLevelSet\\BrainProtonDensitySlice.png";
+	const char * outputFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\example\\SegmentWithGeodesicActiveContourLevelSet\\OutputBrainProtonDensitySlice.png";
+	//const char * inputMaskFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\p01\\0_pre\\01_seg\\export0002.dcm";
+	const int seedPosX = 81;
+	const int seedPosY = 114;
 
-	const double initialDistance = 40;
+	const double initialDistance = 5.0;
 	const double sigma = 1.0;
-	const double alpha = 2;
-	const double beta = 20;
-	const double propagationScaling = -1.0;
-	const double numberOfIterations = 2.0;
+	const double alpha = -0.5;
+	const double beta = 3.0;
+	const double propagationScaling = 2.0;
+	const double numberOfIterations = 5.0;
 	const double seedValue = -initialDistance;
 
 	const unsigned int                Dimension = 2;
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 	ReaderType::Pointer reader = ReaderType::New();
 	reader->SetFileName(inputFileName);
 	ReaderType::Pointer readerMask = ReaderType::New();
-	readerMask->SetFileName(inputMaskFileName);
+	//readerMask->SetFileName(readerMask->GetOutput());
 	
 	typedef  itk::CurvatureAnisotropicDiffusionImageFilter< InputImageType, InputImageType > SmoothingFilterType;
 	SmoothingFilterType::Pointer smoothing = SmoothingFilterType::New();
@@ -62,17 +62,16 @@ int main(int argc, char* argv[])
 	typedef  itk::GradientMagnitudeRecursiveGaussianImageFilter< InputImageType, InputImageType > GradientFilterType;
 	GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
 	gradientMagnitude->SetSigma(sigma);
-	gradientMagnitude->SetInput(readerMask->GetOutput());
-	//gradientMagnitude->SetInput(smoothing->GetOutput());
+	//gradientMagnitude->SetInput(readerMask->GetOutput());
+	gradientMagnitude->SetInput(smoothing->GetOutput());
 	
 	typedef  itk::SigmoidImageFilter< InputImageType, InputImageType > SigmoidFilterType;
 	SigmoidFilterType::Pointer sigmoid = SigmoidFilterType::New();
-	sigmoid->SetOutputMinimum(1.0);
-	sigmoid->SetOutputMaximum(0.0);
+	sigmoid->SetOutputMinimum(0.0);
+	sigmoid->SetOutputMaximum(1.0);
 	sigmoid->SetAlpha(alpha);
 	sigmoid->SetBeta(beta);
 	sigmoid->SetInput(gradientMagnitude->GetOutput());
-
 	
 
 	typedef  itk::FastMarchingImageFilter< InputImageType, InputImageType > FastMarchingFilterType;
@@ -129,7 +128,7 @@ int main(int argc, char* argv[])
 	WriterType::Pointer writer3 = WriterType::New();
 	WriterType::Pointer writer4 = WriterType::New();
 
-	//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(sigmoid->GetOutput()));
+	SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(sigmoid->GetOutput()));
 
 	caster1->SetInput(smoothing->GetOutput());
 	writer1->SetInput(caster1->GetOutput());
