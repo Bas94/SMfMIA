@@ -67,7 +67,7 @@ protected:
     // all color mappers which do the actual rendering step of coloring the mask
     std::vector< vtkSmartPointer<vtkImageMapToColors> > MapColors;
 
-	std::vector<vtkSmartPointer<vtkImageData>> m_ImageData;
+    std::vector<vtkSmartPointer<vtkImageData> > m_ImageData;
 };
 
 #endif // SMFMIA_IMAGE_VIEWER
