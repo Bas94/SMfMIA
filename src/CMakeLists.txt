@@ -127,8 +127,8 @@ set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               Helpers/Validator.cpp
               ContourToMask.cpp
               BiasCorrection.cpp
-              #LevelSetSeg.cpp )
-			  )
+              )
+			  
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
               SMfMIAInteractorStyle.h
@@ -142,8 +142,8 @@ set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               ContourFromMask.h
               ContourToMask.h
               BiasCorrection.h
-             #LevelSetSeg.h )
-				)
+              )
+				
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARIES})
@@ -174,7 +174,12 @@ add_executable(levelSetCopyPasteTest test/levelSetCopyPasteTest.cpp
                                     SMfMIAInteractorStyle.h
 									SMfMIAImageViewer.cpp
 									SMfMIAImageViewer.h
-									 Helpers/Converter.cpp
-									 Helpers/Converter.h)
+									Helpers/Converter.cpp
+									Helpers/Converter.h
+									Denoising.cpp
+									Denoising.h
+									LevelSetSeg.cpp
+									LevelSetSeg.h
+									Helpers/TypeDefinitions.h)
 target_link_libraries( levelSetCopyPasteTest ${PROJECT_LIBRARIES} )
 
