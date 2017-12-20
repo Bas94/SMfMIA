@@ -9,8 +9,9 @@
 #include "itkBinaryThresholdImageFilter.h"
 
 #include "Helpers/Converter.h"
-
+#include "Denoising.h"
 #include "SMfMIAImageViewer.h"
+#include "LevelSetSeg.h"
 int main(int argc, char* argv[])
 {
 	/*if (argc != 11)
@@ -23,18 +24,18 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}*/
 
-	const char * inputFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\example\\SegmentWithGeodesicActiveContourLevelSet\\BrainProtonDensitySlice.png";
-	const char * outputFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\example\\SegmentWithGeodesicActiveContourLevelSet\\OutputBrainProtonDensitySlice.png";
-	//const char * inputMaskFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\p01\\0_pre\\01_seg\\export0002.dcm";
-	const int seedPosX = 81;
-	const int seedPosY = 114;
+	const char * inputFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\p01\\1_int\\10_data\\export0004.dcm";
+	const char * outputFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\p01\\1_int\\10_data\\export0004Output.dcm";
+	const char * inputMaskFileName = "C:\\DatenE\\02WiSe1718\\03SMMIA\\Projekt\\data\\p01\\0_pre\\01_seg\\export0004.dcm";
+	const int seedPosX = 67;
+	const int seedPosY = 59;
 
 	const double initialDistance = 5.0;
 	const double sigma = 1.0;
 	const double alpha = -0.5;
 	const double beta = 3.0;
 	const double propagationScaling = 2.0;
-	const double numberOfIterations = 5.0;
+	const double numberOfIterations = 3000.0;
 	const double seedValue = -initialDistance;
 
 	const unsigned int                Dimension = 2;
@@ -50,30 +51,41 @@ int main(int argc, char* argv[])
 	ReaderType::Pointer reader = ReaderType::New();
 	reader->SetFileName(inputFileName);
 	ReaderType::Pointer readerMask = ReaderType::New();
-	//readerMask->SetFileName(readerMask->GetOutput());
-	
+	readerMask->SetFileName(inputMaskFileName);
+	readerMask->Update();
+
 	typedef  itk::CurvatureAnisotropicDiffusionImageFilter< InputImageType, InputImageType > SmoothingFilterType;
 	SmoothingFilterType::Pointer smoothing = SmoothingFilterType::New();
 	smoothing->SetTimeStep(0.125);
 	smoothing->SetNumberOfIterations(5);
 	smoothing->SetConductanceParameter(9.0);
-	smoothing->SetInput(reader->GetOutput());	
+	smoothing->SetInput(reader->GetOutput());
 
 	typedef  itk::GradientMagnitudeRecursiveGaussianImageFilter< InputImageType, InputImageType > GradientFilterType;
 	GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
 	gradientMagnitude->SetSigma(sigma);
 	//gradientMagnitude->SetInput(readerMask->GetOutput());
 	gradientMagnitude->SetInput(smoothing->GetOutput());
-	
+
+	InputImageType::Pointer bilateralSmoothedImage = Denoising::bilateralFilter2D<InputImageType>(reader->GetOutput(), 2, 100);
+
+	SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(bilateralSmoothedImage));
+
 	typedef  itk::SigmoidImageFilter< InputImageType, InputImageType > SigmoidFilterType;
 	SigmoidFilterType::Pointer sigmoid = SigmoidFilterType::New();
 	sigmoid->SetOutputMinimum(0.0);
 	sigmoid->SetOutputMaximum(1.0);
 	sigmoid->SetAlpha(alpha);
 	sigmoid->SetBeta(beta);
-	sigmoid->SetInput(gradientMagnitude->GetOutput());
-	
+	//sigmoid->SetInput(gradientMagnitude->GetOutput());
+	sigmoid->SetInput(bilateralSmoothedImage);
 
+	//  The FastMarchingImageFilter requires the user to provide a seed
+	//  point from which the level set will be generated. The user can actually
+	//  pass not only one seed point but a set of them. Note the the
+	//  FastMarchingImageFilter is used here only as a helper in the
+	//  determination of an initial level set. We could have used the
+	//  \doxygen{DanielssonDistanceMapImageFilter} in the same way.
 	typedef  itk::FastMarchingImageFilter< InputImageType, InputImageType > FastMarchingFilterType;
 	FastMarchingFilterType::Pointer  fastMarching = FastMarchingFilterType::New();
 
@@ -88,7 +100,7 @@ int main(int argc, char* argv[])
 	geodesicActiveContour->SetInput(fastMarching->GetOutput());
 	geodesicActiveContour->SetFeatureImage(sigmoid->GetOutput());
 
-	
+
 
 	typedef itk::BinaryThresholdImageFilter< InputImageType, OutputImageType > ThresholdingFilterType;
 	ThresholdingFilterType::Pointer thresholder = ThresholdingFilterType::New();
@@ -101,13 +113,30 @@ int main(int argc, char* argv[])
 	typedef FastMarchingFilterType::NodeContainer  NodeContainer;
 	typedef FastMarchingFilterType::NodeType       NodeType;
 
+	/* TODO: calculate seed points with mask and inter_image
+	 for that calculate middlepoint pixel of image mask
+	 setze den setValue auf den Wert der Distanz zwischen seedPoint und wirklicher Kontur, dafuer muss aus
+	 der Maske die Kontur berechnet werden und der durchschnittliche Abstand von vorher berechnetem seedPoint
+	 zu Kontur berechnet werden
+	*/
+	//	Note that here we assign the value of minus the
+	//  user-provided distance to the unique node of the seeds passed to the
+	//  FastMarchingImageFilter. In this way, the value will increment
+	//  as the front is propagated, until it reaches the zero value corresponding
+	//  to the contour. After this, the front will continue propagating until it
+	//  fills up the entire image. The initial distance is taken here from the
+	//  command line arguments. The rule of thumb for the user is to select this
+	//  value as the distance from the seed points at which she want the initial
+	//  contour to be.
+	std::vector<int> seedPoints = LevelSetSeg::computeMeanValueOfMask<InputImageType>(readerMask->GetOutput());
+
 	InputImageType::IndexType  seedPosition;
-	seedPosition[0] = seedPosX;
-	seedPosition[1] = seedPosY;
+	seedPosition[0] = seedPoints[0];
+	seedPosition[1] = seedPoints[1];
 
 	NodeContainer::Pointer seeds = NodeContainer::New();
 	NodeType node;
-	node.SetValue(seedValue);
+	node.SetValue(-30);
 	node.SetIndex(seedPosition);
 
 	seeds->Initialize();
@@ -128,7 +157,7 @@ int main(int argc, char* argv[])
 	WriterType::Pointer writer3 = WriterType::New();
 	WriterType::Pointer writer4 = WriterType::New();
 
-	SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(sigmoid->GetOutput()));
+	//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(sigmoid->GetOutput()));
 
 	caster1->SetInput(smoothing->GetOutput());
 	writer1->SetInput(caster1->GetOutput());
