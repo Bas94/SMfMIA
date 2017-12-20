@@ -26,4 +26,6 @@ namespace Denoising
 
         return Converter::ConvertITKToVTK<ImageType>(image);
 	}
+
+	
 }
