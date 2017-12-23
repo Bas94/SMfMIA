@@ -7,16 +7,19 @@
 #include <itkBinaryContourImageFilter.h>
 namespace LevelSet
 {
-	const unsigned int                Dimension = 2;
-	typedef float                                    InputPixelType;
-	typedef itk::Image< InputPixelType, Dimension >  InputImageType;
-	typedef unsigned char                            OutputPixelType;
-	typedef itk::Image< OutputPixelType, Dimension > OutputImageType;
+	typedef float                                    InputPixelType2D;
+	typedef itk::Image< InputPixelType2D, 2 >  InputImageType2D;
+	typedef unsigned char                            OutputPixelType2D;
+	typedef itk::Image< OutputPixelType2D, 2 > OutputImageType2D;
 
-	typedef  itk::ImageFileReader< InputImageType >  ReaderType;
-	typedef  itk::ImageFileWriter< OutputImageType > WriterType;
+	typedef  itk::ImageFileReader< InputImageType2D >  ReaderType;
+	typedef  itk::ImageFileWriter< OutputImageType2D > WriterType;
 
+	//TODO: output of itkImage
 	void runLevelSet2D(const std::string inputFileName, const std::string inputMaskFileName, const std::string outputFileName, const std::string outputDirectory);
+	
+	//TODO: output of itkImage
+	void runLevelSet3D(const std::string inputFileName, const std::string inputMaskFileName, const std::string outputFileName, const std::string outputDirectory);
 
 	template<typename itkImageType>
 	std::vector<int> computeMeanValueOfMask(typename itkImageType::Pointer mask)

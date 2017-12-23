@@ -26,15 +26,15 @@ namespace LevelSet
 		readerMask->SetFileName(inputMaskFileName);
 		readerMask->Update();
 
-		InputImageType::Pointer bilateralSmoothedImage = Denoising::bilateralFilter2D<InputImageType>(reader->GetOutput(), 2, 100);
-		typedef  itk::GradientMagnitudeRecursiveGaussianImageFilter< InputImageType, InputImageType > GradientFilterType;
+		InputImageType2D::Pointer bilateralSmoothedImage = Denoising::bilateralFilter2D<InputImageType2D>(reader->GetOutput(), 2, 100);
+		typedef  itk::GradientMagnitudeRecursiveGaussianImageFilter< InputImageType2D, InputImageType2D > GradientFilterType;
 		GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
 		gradientMagnitude->SetSigma(sigma);		//gradientMagnitude->SetInput(readerMask->GetOutput());
 		gradientMagnitude->SetInput(bilateralSmoothedImage);
 
 		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(gradientMagnitude->GetOutput()));
 
-		typedef  itk::SigmoidImageFilter< InputImageType, InputImageType > SigmoidFilterType;
+		typedef  itk::SigmoidImageFilter< InputImageType2D, InputImageType2D > SigmoidFilterType;
 		SigmoidFilterType::Pointer sigmoid = SigmoidFilterType::New();
 		sigmoid->SetOutputMinimum(0.0);
 		sigmoid->SetOutputMaximum(1.0);
@@ -48,10 +48,10 @@ namespace LevelSet
 		//  FastMarchingImageFilter is used here only as a helper in the
 		//  determination of an initial level set. We could have used the
 		//  \doxygen{DanielssonDistanceMapImageFilter} in the same way.
-		typedef  itk::FastMarchingImageFilter< InputImageType, InputImageType > FastMarchingFilterType;
+		typedef  itk::FastMarchingImageFilter< InputImageType2D, InputImageType2D > FastMarchingFilterType;
 		FastMarchingFilterType::Pointer  fastMarching = FastMarchingFilterType::New();
 
-		typedef  itk::GeodesicActiveContourLevelSetImageFilter< InputImageType, InputImageType >  GeodesicActiveContourFilterType;
+		typedef  itk::GeodesicActiveContourLevelSetImageFilter< InputImageType2D, InputImageType2D >  GeodesicActiveContourFilterType;
 		GeodesicActiveContourFilterType::Pointer geodesicActiveContour = GeodesicActiveContourFilterType::New();
 		geodesicActiveContour->SetPropagationScaling(3.0);
 		geodesicActiveContour->SetCurvatureScaling(6.0);
@@ -64,12 +64,12 @@ namespace LevelSet
 
 
 
-		typedef itk::BinaryThresholdImageFilter< InputImageType, OutputImageType > ThresholdingFilterType;
+		typedef itk::BinaryThresholdImageFilter< InputImageType2D, OutputImageType2D > ThresholdingFilterType;
 		ThresholdingFilterType::Pointer thresholder = ThresholdingFilterType::New();
 		thresholder->SetLowerThreshold(-1000.0);
 		thresholder->SetUpperThreshold(0.0);
-		thresholder->SetOutsideValue(itk::NumericTraits< OutputPixelType >::min());
-		thresholder->SetInsideValue(itk::NumericTraits< OutputPixelType >::max());
+		thresholder->SetOutsideValue(itk::NumericTraits< OutputPixelType2D >::min());
+		thresholder->SetInsideValue(itk::NumericTraits< OutputPixelType2D >::max());
 		thresholder->SetInput(geodesicActiveContour->GetOutput());
 
 		typedef FastMarchingFilterType::NodeContainer  NodeContainer;
@@ -90,10 +90,10 @@ namespace LevelSet
 		//  command line arguments. The rule of thumb for the user is to select this
 		//  value as the distance from the seed points at which she want the initial
 		//  contour to be.
-		std::vector<int> seedPoint = computeMeanValueOfMask<InputImageType>(readerMask->GetOutput());
-		double mean_d = distanceConturToSeedPoint<InputImageType>(readerMask->GetOutput(), seedPoint);
+		std::vector<int> seedPoint = computeMeanValueOfMask<InputImageType2D>(readerMask->GetOutput());
+		double mean_d = distanceConturToSeedPoint<InputImageType2D>(readerMask->GetOutput(), seedPoint);
 
-		InputImageType::IndexType  seedPosition;
+		InputImageType2D::IndexType  seedPosition;
 		seedPosition[0] = seedPoint[0];
 		seedPosition[1] = seedPoint[1];
 
@@ -108,7 +108,7 @@ namespace LevelSet
 		fastMarching->SetTrialPoints(seeds);
 		fastMarching->SetSpeedConstant(1.0);
 
-		typedef itk::RescaleIntensityImageFilter< InputImageType, OutputImageType > CastFilterType;
+		typedef itk::RescaleIntensityImageFilter< InputImageType2D, OutputImageType2D > CastFilterType;
 
 		CastFilterType::Pointer caster1 = CastFilterType::New();
 		CastFilterType::Pointer caster2 = CastFilterType::New();
@@ -125,29 +125,29 @@ namespace LevelSet
 		caster1->SetInput(bilateralSmoothedImage);
 		writer1->SetInput(caster1->GetOutput());
 		writer1->SetFileName(outputDirectory + "GeodesicActiveContourImageFilterOutput1.dcm");
-		caster1->SetOutputMinimum(itk::NumericTraits< OutputPixelType >::min());
-		caster1->SetOutputMaximum(itk::NumericTraits< OutputPixelType >::max());
+		caster1->SetOutputMinimum(itk::NumericTraits< OutputPixelType2D >::min());
+		caster1->SetOutputMaximum(itk::NumericTraits< OutputPixelType2D >::max());
 		writer1->Update();
 
 		caster2->SetInput(gradientMagnitude->GetOutput());
 		writer2->SetInput(caster2->GetOutput());
 		writer2->SetFileName(outputDirectory + "GeodesicActiveContourImageFilterOutput2.dcm");
-		caster2->SetOutputMinimum(itk::NumericTraits< OutputPixelType >::min());
-		caster2->SetOutputMaximum(itk::NumericTraits< OutputPixelType >::max());
+		caster2->SetOutputMinimum(itk::NumericTraits< OutputPixelType2D >::min());
+		caster2->SetOutputMaximum(itk::NumericTraits< OutputPixelType2D >::max());
 		writer2->Update();
 
 		caster3->SetInput(sigmoid->GetOutput());
 		writer3->SetInput(caster3->GetOutput());
 		writer3->SetFileName(outputDirectory + "GeodesicActiveContourImageFilterOutput3.dcm");
-		caster3->SetOutputMinimum(itk::NumericTraits< OutputPixelType >::min());
-		caster3->SetOutputMaximum(itk::NumericTraits< OutputPixelType >::max());
+		caster3->SetOutputMinimum(itk::NumericTraits< OutputPixelType2D >::min());
+		caster3->SetOutputMaximum(itk::NumericTraits< OutputPixelType2D >::max());
 		writer3->Update();
 
 		caster4->SetInput(geodesicActiveContour->GetOutput());
 		writer4->SetInput(caster4->GetOutput());
 		writer4->SetFileName(outputDirectory + "GeodesicActiveContourImageFilterOutput4.dcm");
-		caster4->SetOutputMinimum(itk::NumericTraits< OutputPixelType >::min());
-		caster4->SetOutputMaximum(itk::NumericTraits< OutputPixelType >::max());
+		caster4->SetOutputMinimum(itk::NumericTraits< OutputPixelType2D >::min());
+		caster4->SetOutputMaximum(itk::NumericTraits< OutputPixelType2D >::max());
 
 		fastMarching->SetOutputSize(
 			reader->GetOutput()->GetBufferedRegion().GetSize());
@@ -180,8 +180,11 @@ namespace LevelSet
 			std::cerr << "Error: " << error << std::endl;
 		}
 		// Display result of level set segmentation
-		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<OutputImageType>(thresholder->GetOutput()));
+		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<OutputImageType2D>(thresholder->GetOutput()));
 	}
 
-	
+	void runLevelSet3D(const std::string inputFileName, const std::string inputMaskFileName, const std::string outputFileName, const std::string outputDirectory)
+	{
+
+	}
 }
