@@ -182,6 +182,9 @@ add_executable(levelSetCopyPasteTest test/levelSetCopyPasteTest.cpp
 									Denoising.h
 									Helpers/TypeDefinitions.h
 									LevelSetFunctions.cpp
-									LevelSetFunctions.h)
+									LevelSetFunctions.h
+									Helpers/Converter.h
+									fileHelpers/DICOMLoaderVTK.cpp
+									fileHelpers/DICOMLoaderVTK.h)
 target_link_libraries( levelSetCopyPasteTest ${PROJECT_LIBRARIES} )
 

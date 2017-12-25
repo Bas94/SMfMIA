@@ -12,14 +12,22 @@ namespace LevelSet
 	typedef unsigned char                            OutputPixelType2D;
 	typedef itk::Image< OutputPixelType2D, 2 > OutputImageType2D;
 
-	typedef  itk::ImageFileReader< InputImageType2D >  ReaderType;
-	typedef  itk::ImageFileWriter< OutputImageType2D > WriterType;
+	typedef  itk::ImageFileReader< InputImageType2D >  ReaderType2D;
+	typedef  itk::ImageFileWriter< OutputImageType2D > WriterType2D;
+
+	typedef float                                    InputPixelType3D;
+	typedef short									OutputPixelType3D;
+	typedef itk::Image< InputPixelType3D, 3 >  InputImageType3D;
+	typedef itk::Image< OutputPixelType3D, 3 > OutputImageType3D;
+
+	typedef  itk::ImageFileReader< InputImageType3D >  ReaderType3D;
+	typedef  itk::ImageFileWriter< OutputImageType3D > WriterType3D;
 
 	//TODO: output of itkImage
 	void runLevelSet2D(const std::string inputFileName, const std::string inputMaskFileName, const std::string outputFileName, const std::string outputDirectory);
 	
 	//TODO: output of itkImage
-	void runLevelSet3D(const std::string inputFileName, const std::string inputMaskFileName, const std::string outputFileName, const std::string outputDirectory);
+	void runLevelSet3D(OutputImageType3D::Pointer itkImageData, const std::string outputFileName, const std::string outputDirectory);
 
 	template<typename itkImageType>
 	std::vector<int> computeMeanValueOfMask(typename itkImageType::Pointer mask)
@@ -52,7 +60,7 @@ namespace LevelSet
 		outputValues.push_back(mean_y);
 
 		return outputValues;
-	}
+	};
 
 	template<typename itkImageType>
 	double distanceConturToSeedPoint(typename itkImageType::Pointer mask, std::vector<int> seedPoint)
@@ -90,5 +98,5 @@ namespace LevelSet
 		}
 		mean_d = ((1.0)*mean_d) / nPixelContour;
 		return mean_d;
-	}
+	};
 }

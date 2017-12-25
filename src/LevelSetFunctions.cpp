@@ -4,6 +4,7 @@
 #include "Denoising.h"
 #include "SMfMIAImageViewer.h"
 #include "LevelSetSeg.h"
+#include "Helpers/Converter.h"
 
 #include "itkGeodesicActiveContourLevelSetImageFilter.h"
 #include "itkCurvatureAnisotropicDiffusionImageFilter.h"
@@ -20,13 +21,13 @@ namespace LevelSet
 	{
 		const double sigma = 1.0;
 
-		ReaderType::Pointer reader = ReaderType::New();
+		ReaderType2D::Pointer reader = ReaderType2D::New();
 		reader->SetFileName(inputFileName);
-		ReaderType::Pointer readerMask = ReaderType::New();
+		ReaderType2D::Pointer readerMask = ReaderType2D::New();
 		readerMask->SetFileName(inputMaskFileName);
 		readerMask->Update();
 
-		InputImageType2D::Pointer bilateralSmoothedImage = Denoising::bilateralFilter2D<InputImageType2D>(reader->GetOutput(), 2, 100);
+		InputImageType2D::Pointer bilateralSmoothedImage = Denoising::bilateralFilterTemplate<InputImageType2D>(reader->GetOutput(), 2, 100);
 		typedef  itk::GradientMagnitudeRecursiveGaussianImageFilter< InputImageType2D, InputImageType2D > GradientFilterType;
 		GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
 		gradientMagnitude->SetSigma(sigma);		//gradientMagnitude->SetInput(readerMask->GetOutput());
@@ -34,8 +35,8 @@ namespace LevelSet
 
 		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(gradientMagnitude->GetOutput()));
 
-		typedef  itk::SigmoidImageFilter< InputImageType2D, InputImageType2D > SigmoidFilterType;
-		SigmoidFilterType::Pointer sigmoid = SigmoidFilterType::New();
+		typedef  itk::SigmoidImageFilter< InputImageType2D, InputImageType2D > SigmoidFilterType2D;
+		SigmoidFilterType2D::Pointer sigmoid = SigmoidFilterType2D::New();
 		sigmoid->SetOutputMinimum(0.0);
 		sigmoid->SetOutputMaximum(1.0);
 		sigmoid->SetAlpha(25);
@@ -115,10 +116,10 @@ namespace LevelSet
 		CastFilterType::Pointer caster3 = CastFilterType::New();
 		CastFilterType::Pointer caster4 = CastFilterType::New();
 
-		WriterType::Pointer writer1 = WriterType::New();
-		WriterType::Pointer writer2 = WriterType::New();
-		WriterType::Pointer writer3 = WriterType::New();
-		WriterType::Pointer writer4 = WriterType::New();
+		WriterType2D::Pointer writer1 = WriterType2D::New();
+		WriterType2D::Pointer writer2 = WriterType2D::New();
+		WriterType2D::Pointer writer3 = WriterType2D::New();
+		WriterType2D::Pointer writer4 = WriterType2D::New();
 
 		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(sigmoid->GetOutput()));
 
@@ -152,7 +153,7 @@ namespace LevelSet
 		fastMarching->SetOutputSize(
 			reader->GetOutput()->GetBufferedRegion().GetSize());
 
-		WriterType::Pointer writer = WriterType::New();
+		WriterType2D::Pointer writer = WriterType2D::New();
 		writer->SetFileName(outputDirectory+outputFileName);
 		writer->SetInput(thresholder->GetOutput());
 		try
@@ -183,8 +184,73 @@ namespace LevelSet
 		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<OutputImageType2D>(thresholder->GetOutput()));
 	}
 
-	void runLevelSet3D(const std::string inputFileName, const std::string inputMaskFileName, const std::string outputFileName, const std::string outputDirectory)
+	void runLevelSet3D(OutputImageType3D::Pointer itkImageData, const std::string outputFileName, const std::string outputDirectory)
 	{
+		const double sigma = 1.0;
+	
+		typedef itk::RescaleIntensityImageFilter<OutputImageType3D , InputImageType3D > CastFilterTypeOutputToInput;
 
+		CastFilterTypeOutputToInput::Pointer caster = CastFilterTypeOutputToInput::New();
+		caster->SetInput(itkImageData);
+		caster->Update();
+		
+		//InputImageType3D::Pointer bilateralSmoothedImage = Denoising::bilateralFilterTemplate<InputImageType3D>(itkImageData, 2, 100);
+		typedef  itk::GradientMagnitudeRecursiveGaussianImageFilter< InputImageType3D, InputImageType3D > GradientFilterType;
+		GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
+		gradientMagnitude->SetSigma(sigma);		//gradientMagnitude->SetInput(readerMask->GetOutput());
+		gradientMagnitude->SetInput(caster->GetOutput());
+
+		typedef  itk::SigmoidImageFilter< InputImageType3D, InputImageType3D > SigmoidFilterType;
+		SigmoidFilterType::Pointer sigmoid = SigmoidFilterType::New();
+		sigmoid->SetOutputMinimum(0.0);
+		sigmoid->SetOutputMaximum(1.0);
+		sigmoid->SetAlpha(25);
+		sigmoid->SetBeta(100);
+		sigmoid->SetInput(gradientMagnitude->GetOutput());
+		typedef itk::RescaleIntensityImageFilter< InputImageType3D, OutputImageType3D > CastFilterType;
+				
+		
+		typedef  itk::FastMarchingImageFilter< InputImageType3D, InputImageType3D > FastMarchingFilterType;
+		FastMarchingFilterType::Pointer  fastMarching = FastMarchingFilterType::New();
+
+		typedef  itk::GeodesicActiveContourLevelSetImageFilter< InputImageType3D, InputImageType3D >  GeodesicActiveContourFilterType;
+		GeodesicActiveContourFilterType::Pointer geodesicActiveContour = GeodesicActiveContourFilterType::New();
+		geodesicActiveContour->SetPropagationScaling(3.0);
+		geodesicActiveContour->SetCurvatureScaling(6.0);
+		geodesicActiveContour->SetAdvectionScaling(10.0);
+		geodesicActiveContour->SetMaximumRMSError(0.01);
+		//geodesicActiveContour->SetReverseExpansionDirection(true);
+		geodesicActiveContour->SetNumberOfIterations(3000);
+		geodesicActiveContour->SetInput(fastMarching->GetOutput());
+		geodesicActiveContour->SetFeatureImage(sigmoid->GetOutput());
+	
+		typedef itk::BinaryThresholdImageFilter< InputImageType3D, OutputImageType3D > ThresholdingFilterType;
+		ThresholdingFilterType::Pointer thresholder = ThresholdingFilterType::New();
+		thresholder->SetLowerThreshold(-1000.0);
+		thresholder->SetUpperThreshold(0.0);
+		thresholder->SetOutsideValue(itk::NumericTraits< OutputPixelType2D >::min());
+		thresholder->SetInsideValue(itk::NumericTraits< OutputPixelType2D >::max());
+		thresholder->SetInput(geodesicActiveContour->GetOutput());
+		
+		typedef FastMarchingFilterType::NodeContainer  NodeContainer;
+		typedef FastMarchingFilterType::NodeType       NodeType;
+
+		InputImageType3D::IndexType  seedPosition;
+		seedPosition[0] = 55;
+		seedPosition[1] = 55;
+		seedPosition[2] = 55;
+		NodeContainer::Pointer seeds = NodeContainer::New();
+		NodeType node;
+		node.SetValue(-5.0);
+		node.SetIndex(seedPosition);
+
+		seeds->Initialize();
+		seeds->InsertElement(0, node);
+
+		fastMarching->SetTrialPoints(seeds);
+		fastMarching->SetSpeedConstant(1.0);
+		fastMarching->SetOutputSize(
+			sigmoid->GetOutput()->GetBufferedRegion().GetSize());
+		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<OutputImageType3D>(thresholder->GetOutput()));
 	}
 }
