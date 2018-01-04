@@ -3,8 +3,9 @@
 #include <itkImage.h>
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-
 #include <itkBinaryContourImageFilter.h>
+#include "Helpers/TypeDefinitions.h"
+
 namespace LevelSet
 {
 	typedef float                                    InputPixelType2D;
@@ -65,7 +66,7 @@ namespace LevelSet
 	template<typename itkImageType>
 	double distanceConturToSeedPoint(typename itkImageType::Pointer mask, std::vector<int> seedPoint)
 	{
-		itk::BinaryContourImageFilter<itkImageType, itkImageType>::Pointer contourFilter =
+        typename itk::BinaryContourImageFilter<itkImageType, itkImageType>::Pointer contourFilter =
 			itk::BinaryContourImageFilter<itkImageType, itkImageType>::New();
 
 		contourFilter->SetInput(mask);

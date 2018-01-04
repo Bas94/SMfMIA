@@ -1,6 +1,7 @@
 #pragma once
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
+#include <itkBilateralImageFilter.h>
 
 namespace Denoising 
 {	
@@ -10,13 +11,13 @@ namespace Denoising
 	typename itkImageType::Pointer bilateralFilterTemplate(typename itkImageType::Pointer itkImagePointer, double domainSigma, double rangeSigma)
 	{
 		typedef itk::BilateralImageFilter<itkImageType, itkImageType >	BilateralImageFilter2D;
-		BilateralImageFilter2D::Pointer bilateralFilter = BilateralImageFilter2D::New();
+        typename BilateralImageFilter2D::Pointer bilateralFilter = BilateralImageFilter2D::New();
 		bilateralFilter->SetInput(itkImagePointer);
 		bilateralFilter->SetDomainSigma(domainSigma);
 		bilateralFilter->SetRangeSigma(rangeSigma);
 		bilateralFilter->Update();
 
-		itkImageType::Pointer outputImage = bilateralFilter->GetOutput();
+        typename itkImageType::Pointer outputImage = bilateralFilter->GetOutput();
 		return outputImage;
 	}
 }
