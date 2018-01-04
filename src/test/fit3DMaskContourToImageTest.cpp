@@ -24,7 +24,7 @@ int main( int argc, char** argv )
     double stiffness = 500;
     double speed = 0.2;
     double smoothingSigma = 2;
-    double iterations = 2000;
+    double iterations = 130;
 
     std::cerr << "load data" << std::endl;
     vtkSmartPointer<vtkImageData> image =
@@ -50,6 +50,7 @@ int main( int argc, char** argv )
         voiExtractor->GetOutput()->SetExtent( 0, dim[0]-1, 0, dim[1]-1, 0, 0 );
 
         std::vector<Contour> contoursInSlice = ContourFromMask::computeWithEdgeFilter( voiExtractor->GetOutput(), 0 );
+        std::cout << "found contours " << contoursInSlice.size() << " in slice " << mask->GetDimensions()[2]-i << std::endl;
         for( size_t j = 0; j < contoursInSlice.size(); ++j )
         {
             // if number of points is small enough, don't simplify
@@ -116,7 +117,7 @@ int main( int argc, char** argv )
             cv::add( sliceMask, mask, sliceMask );
         }
         std::stringstream ss;
-        ss << "mask" << std::setfill('0') << std::setw(2) << i << ".jpg";
+        ss << "mask" << std::setfill('0') << std::setw(2) << finalContoursPerSclice.size()- i << ".jpg";
         cv::imwrite( ss.str(), sliceMask );
         masksSlicewise.push_back( sliceMask );
     }

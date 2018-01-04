@@ -122,7 +122,7 @@ int main( int argc, char** argv )
     double stiffness = 500;
     double gamma = 0.2;
     double sigma = 2;
-    double iterations = 2000;
+    double iterations = 130;
 
     std::vector< std::vector<cv::Point2d> > contours = ContourFromMask::computeWithEdgeFilter( mask, 0 );
     std::vector< std::vector<cv::Point2d> > groundTruthContours = ContourFromMask::computeWithEdgeFilter( groundTruth, 0 );
@@ -167,7 +167,7 @@ int main( int argc, char** argv )
 
     std::cerr << "start iteration" << std::endl;
 
-#if 1
+#if 0
     Contour finalContour = activeContour.compute();
 #else
     activeContour.init();
