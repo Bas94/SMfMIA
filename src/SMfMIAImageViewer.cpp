@@ -23,6 +23,48 @@ SMfMIAImageViewer::~SMfMIAImageViewer()
 {
 }
 
+void SMfMIAImageViewer::Show(vtkSmartPointer<vtkImageData > imageData)
+{
+	// Visualize
+	vtkSmartPointer<SMfMIAImageViewer> imageViewer =
+		vtkSmartPointer<SMfMIAImageViewer>::New();
+	// Creats an interactor
+	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+		vtkSmartPointer<vtkRenderWindowInteractor>::New();
+
+	// Usage of own InteractionStyle
+	vtkSmartPointer<SMfMIAInteractorStyle> myInteractorStyle =
+		vtkSmartPointer<SMfMIAInteractorStyle>::New();
+	myInteractorStyle->SetImageViewer(imageViewer);
+
+	imageViewer->SetupInteractor(renderWindowInteractor);
+	renderWindowInteractor->SetInteractorStyle(myInteractorStyle);
+
+	imageViewer->SetInputData(imageData);
+
+	//imageViewer->GetRenderer()->SetViewport(xmins[i], ymins[i], xmaxs[i], ymaxs[i]);
+
+	imageViewer->SetSize(800, 600);
+	imageViewer->Render();
+	imageViewer->GetRenderer()->ResetCamera();
+	imageViewer->Render();
+	imageViewer->SetSliceOrientationToXY();
+	renderWindowInteractor->Start();
+}
+
+void SMfMIAImageViewer::Render()
+{
+	/*if (m_ImageData.size() > 1)
+	{
+
+	}
+	else
+	{*/
+		vtkResliceImageViewer::Render();
+	//}
+}
+
+
 void SMfMIAImageViewer::AddMask( vtkSmartPointer<vtkImageData> mask,
                                  double colR /*= 0.3*/,
                                  double colG /*= 0.0*/,
