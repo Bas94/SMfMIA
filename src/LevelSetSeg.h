@@ -3,7 +3,12 @@
 #include "Helpers/Converter.h"
 #include "Helpers/TypeDefinitions.h"
 
+#include <vector>
+#include <itkBinaryContourImageFilter.h>
+#include "SMfMIAImageViewer.h"
+
 namespace LevelSetSeg
 {
-	vtkSmartPointer<vtkImageData> levelSetSegmentation(vtkSmartPointer<vtkImageData> imageData, vtkSmartPointer<vtkImageData> imageMask, const double propagationScaling, const double numberOfIterations);
+	
+	
 }

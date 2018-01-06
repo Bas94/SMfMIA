@@ -4,6 +4,15 @@ project(liverSegmenter)
 set( OPENCV_DIR "" CACHE PATH "Path to opencv main directory" )
 set( PROJECT_LIBRARIES "")
 
+#add c++11 support
+if( CMAKE_VERSION VERSION_LESS "3.1" )
+    if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11" )
+    endif( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
+else ( CMAKE_VERSION VERSION_LESS "3.1" )
+    set( CMAKE_CXX_STANDARD 11 )
+endif( CMAKE_VERSION VERSION_LESS "3.1" )
+
 # set path to all CMAKE_MODULES
 set( CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 # Find includes in corresponding build directories
@@ -127,8 +136,9 @@ set( SRC_LIST fileHelpers/DICOMLoaderVTK.cpp
               Helpers/Validator.cpp
               ContourToMask.cpp
               BiasCorrection.cpp
+			  LevelSetFunctions.cpp
               )
-
+			  
 set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               fileHelpers/FileDialog.h
               SMfMIAInteractorStyle.h
@@ -142,8 +152,9 @@ set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               ContourFromMask.h
               ContourToMask.h
               BiasCorrection.h
-               )
-
+			  LevelSetFunctions.h
+              )
+				
 # create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SRC_LIST} ${HDR_LIST})
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARIES})
@@ -157,7 +168,8 @@ add_executable( contourFromMaskTest test/contourFromMaskTest.cpp
                                     ContourFromMask.cpp
                                     ContourFromMask.h
                                     SMfMIAInteractorStyle.cpp
-                                    SMfMIAInteractorStyle.h )
+                                    SMfMIAInteractorStyle.h
+                                    ColorTable.h )
 target_link_libraries( contourFromMaskTest ${PROJECT_LIBRARIES} )
 
 add_executable( fit2DMaskContourToImageTest test/fit2DMaskContourToImageTest.cpp ${SRC_LIST} ${HDR_LIST} )
@@ -166,15 +178,23 @@ target_link_libraries( fit2DMaskContourToImageTest ${PROJECT_LIBRARIES} )
 add_executable( fit3DMaskContourToImageTest test/fit3DMaskContourToImageTest.cpp ${SRC_LIST} ${HDR_LIST} )
 target_link_libraries( fit3DMaskContourToImageTest ${PROJECT_LIBRARIES} )
 
-add_executable(levelSetTest test/levelSetTest.cpp ${SRC_LIST} ${HDR_LIST} )
-target_link_libraries( levelSetTest ${PROJECT_LIBRARIES} )
+#add_executable(levelSetTest test/levelSetTest.cpp ${SRC_LIST} ${HDR_LIST} )
+#target_link_libraries( levelSetTest ${PROJECT_LIBRARIES} )
 
 add_executable(levelSetCopyPasteTest test/levelSetCopyPasteTest.cpp 
 									SMfMIAInteractorStyle.cpp
                                     SMfMIAInteractorStyle.h
 									SMfMIAImageViewer.cpp
 									SMfMIAImageViewer.h
-									 Helpers/Converter.cpp
-									 Helpers/Converter.h)
+									Helpers/Converter.cpp
+									Helpers/Converter.h
+									Denoising.cpp
+									Denoising.h
+									Helpers/TypeDefinitions.h
+									LevelSetFunctions.cpp
+									LevelSetFunctions.h
+									Helpers/Converter.h
+									fileHelpers/DICOMLoaderVTK.cpp
+									fileHelpers/DICOMLoaderVTK.h)
 target_link_libraries( levelSetCopyPasteTest ${PROJECT_LIBRARIES} )
 

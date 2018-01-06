@@ -19,7 +19,7 @@ namespace ContourFromMask
      * \return returns vector of points which discribe the outer contour of the mask
      */
     Contour compute( vtkImageData* mask, int zSLice );
-    std::vector<Contour> computeWithEdgeFilter(vtkImageData* mask, int zSLice , int sizeThreshold = 100 );
+    std::vector<Contour> computeWithEdgeFilter(vtkImageData* mask, int zSLice , int sizeThreshold = 40 );
 
     /*!
      * \brief simplify simplifies a given contour. The simplification is done with

@@ -1,5 +1,6 @@
 #include "fileHelpers/DICOMLoaderVTK.h"
 #include "ContourFromMask.h"
+#include "ColorTable.h"
 
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
@@ -69,27 +70,62 @@ int main( int argc, char** argv )
     vtkSmartPointer<vtkImageData> image =
             DICOMLoaderVTK::loadDICOM( std::string( argv[1] ) );
 
-    std::vector<cv::Point2d> contour = ContourFromMask::compute( image, 0 );
-    std::cout << "contour.size() = " << contour.size() << std::endl;
-    contour = ContourFromMask::simplify( contour, 1 );
-    std::cout << "simplified contour.size() = " << contour.size() << std::endl;
-    contour = ContourFromMask::resample( contour, 100 );
-    std::cout << "resampled contour.size() = " << contour.size() << std::endl;
+    std::vector<Contour> contour = ContourFromMask::computeWithEdgeFilter( image, 0 );
+    std::cout << "found " << contour.size() << " contours" << std::endl;
+    for( size_t i = 0; i < contour.size(); ++i )
+    {
+        std::cout << "contour-" << i << " has size " << contour[i].size() << std::endl;
+        contour[i] = ContourFromMask::simplify( contour[i], 1 );
+        std::cout << "simplified contour-" << i << " to " << contour[i].size() << std::endl;
+        contour[i] = ContourFromMask::resample( contour[i], 100 );
+        std::cout << "resampled contour-" << i << " to " << contour[i].size() << std::endl;
+    }
 
-    vtkSmartPointer<vtkPolyData> polyData =
-            createPolydataLine( contour );
+    vtkSmartPointer<vtkRenderer> renderer =
+            vtkSmartPointer<vtkRenderer>::New();
+    vtkSmartPointer<vtkRenderWindow> renderWindow =
+            vtkSmartPointer<vtkRenderWindow>::New();
+    renderWindow->AddRenderer(renderer);
+    vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
+            vtkSmartPointer<vtkRenderWindowInteractor>::New();
+    renderWindowInteractor->SetRenderWindow(renderWindow);
 
-    // Setup actor and mapper
-    vtkSmartPointer<vtkPolyDataMapper2D> mapper =
-            vtkSmartPointer<vtkPolyDataMapper2D>::New();
-    mapper->SetInputData(polyData);
 
-    vtkSmartPointer<vtkActor2D> actor =
+    itk::VTKImageToImageFilter<MaskType>::Pointer connector =
+            itk::VTKImageToImageFilter<MaskType>::New();
+
+    connector->SetInput( image );
+    connector->Update();
+
+    itk::BinaryContourImageFilter<MaskType, MaskType>::Pointer contourFilter =
+            itk::BinaryContourImageFilter<MaskType, MaskType>::New();
+
+    contourFilter->SetInput( connector->GetOutput() );
+    contourFilter->SetBackgroundValue( 0 );
+    contourFilter->SetForegroundValue( 1 );
+    contourFilter->SetFullyConnected( true );
+    contourFilter->Update();
+
+    itk::ImageToVTKImageFilter<MaskType>::Pointer connectorITKVTK =
+            itk::ImageToVTKImageFilter<MaskType>::New();
+
+    connectorITKVTK->SetInput( contourFilter->GetOutput() );
+    connectorITKVTK->Update();
+
+    vtkImageData* maskContour = connectorITKVTK->GetOutput();
+
+    vtkSmartPointer<vtkImageMapper> contourMapper =
+            vtkSmartPointer<vtkImageMapper>::New();
+    contourMapper->SetColorLevel( 0.5 );
+    contourMapper->SetColorWindow( 1 );
+    contourMapper->SetInputData( maskContour );
+
+    vtkSmartPointer<vtkActor2D> contourActor =
             vtkSmartPointer<vtkActor2D>::New();
-    actor->SetMapper(mapper);
-    actor->GetProperty()->SetColor( 1.0, 0.0, 0.0 );
-    actor->GetProperty()->SetLineWidth( 1 );
-    actor->GetProperty()->SetPointSize( 5 );
+    contourActor->SetMapper(contourMapper);
+    renderer->AddActor( contourActor );
+    renderWindowInteractor->Start();
+    renderer->RemoveActor( contourActor );
 
 
     vtkSmartPointer<vtkImageMapper> imageMapper =
@@ -102,17 +138,30 @@ int main( int argc, char** argv )
             vtkSmartPointer<vtkActor2D>::New();
     imageActor->SetMapper(imageMapper);
 
-    // Setup render window, renderer, and interactor
-    vtkSmartPointer<vtkRenderer> renderer =
-            vtkSmartPointer<vtkRenderer>::New();
-    vtkSmartPointer<vtkRenderWindow> renderWindow =
-            vtkSmartPointer<vtkRenderWindow>::New();
-    renderWindow->AddRenderer(renderer);
-    vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor =
-            vtkSmartPointer<vtkRenderWindowInteractor>::New();
-    renderWindowInteractor->SetRenderWindow(renderWindow);
     renderer->AddActor(imageActor);
-    renderer->AddActor(actor);
+
+    for( size_t i = 0; i < contour.size(); ++i )
+    {
+        vtkSmartPointer<vtkPolyData> polyData =
+                createPolydataLine( contour[i] );
+
+        // Setup actor and mapper
+        vtkSmartPointer<vtkPolyDataMapper2D> mapper =
+                vtkSmartPointer<vtkPolyDataMapper2D>::New();
+        mapper->SetInputData(polyData);
+
+        vtkSmartPointer<vtkActor2D> actor =
+                vtkSmartPointer<vtkActor2D>::New();
+        actor->SetMapper(mapper);
+        actor->GetProperty()->SetColor( colorTable[i % colorTableSize][0]  / 0.3,
+                                        colorTable[i % colorTableSize][1]  / 0.3,
+                                        colorTable[i % colorTableSize][2]  / 0.3 );
+        actor->GetProperty()->SetLineWidth( 3 );
+        actor->GetProperty()->SetPointSize( 5 );
+
+        // Setup render window, renderer, and interactor
+        renderer->AddActor(actor);
+    }
 
     renderWindow->Render();
 
