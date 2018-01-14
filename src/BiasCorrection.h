@@ -13,5 +13,5 @@
 
 namespace BiasCorrection
 {
-	vtkSmartPointer<vtkImageData> shadingFilter(vtkSmartPointer<vtkImageData> imageData, vtkSmartPointer<vtkImageData> maskData, itk::Array<double> means, itk::Array<double> sigmas);
+	vtkSmartPointer<vtkImageData> shadingFilter(vtkSmartPointer<vtkImageData> imageData, vtkSmartPointer<vtkImageData> maskData, itk::Array<double> means, itk::Array<double> sigmas, double scalingFactor, bool scaling);
 }

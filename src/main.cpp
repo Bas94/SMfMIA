@@ -220,13 +220,14 @@ int main(int argc, char** argv)
 	// choose wisely with reference to where the mask is located!
 	// Examplevalues for P05 data: mean 200, sigma 120
 	itk::Array<double> means(1);
-	means.SetElement(0, 200);
+	means.SetElement(0, 400);
 	itk::Array<double> sigmas(1);
-	sigmas.SetElement(0, 120);
-	vtkSmartPointer<vtkImageData> biasCorrectedImageData = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), means, sigmas);
+	sigmas.SetElement(0, 350);
+	double scalingFactor = 2;
+	bool scaling = true; //if set to false, scalingFactor won't be used.
+	vtkSmartPointer<vtkImageData> biasCorrectedImageData = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), means, sigmas, scalingFactor, scaling);
    
 	// display everything
-	
 	imageMasks.clear();
 	displayImages(biasCorrectedImageData, imageMasks);
 
