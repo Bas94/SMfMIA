@@ -12,62 +12,17 @@
 #include <itkNearestNeighborInterpolateImageFunction.h>
 #include <algorithm>    // std::min_element, std::max_element
 
-#include "itkImageFileWriter.h"
-#include "itkImageRegionIterator.h"
-#include "itkBinaryImageToLabelMapFilter.h"
-#include "itkLabelMapToLabelImageFilter.h"
 #include "itkLabelStatisticsImageFilter.h"
-
-#include <itkStatisticsImageFilter.h>
 
 namespace BiasCorrection
 {
 
 	vtkSmartPointer<vtkImageData> shadingFilter(vtkSmartPointer<vtkImageData> imageData, vtkSmartPointer<vtkImageData> maskData, 
-		itk::Array<double> means, itk::Array<double> sigmas, double scalingFactor, bool scaling)
+		double scalingFactor, bool scaling, int iterationsSingleSlice, int iterationsInterSlice)
 	{
 		//convert imageData from VTK to ITK image
 		ImageType::Pointer img = Converter::ConvertVTKToITK<ImageType>(imageData);
 		ImageType::Pointer imgMask = Converter::ConvertVTKToITK<ImageType>(maskData);
-
-		//Estimate the tissue values means and sigmas inside the mask
-		//itk::ImageRegionIterator<ImageType> imageIterator(img, imgMask->GetRequestedRegion());
-		//double summedGreyvalues = 0;
-		//int countedPixel = 0;
-		//unsigned char val = 0;
-
-		//while (!imageIterator.IsAtEnd())
-		//{
-		//	// Get the value of the current pixel
-		//	//unsigned char val = imageIterator.Get();
-		//	//std::cout << (int)val << std::endl;
-
-		//	// Set the current pixel to white
-		//	// Get the value of the current pixel
-		//	val = imageIterator.Get();
-		//	//std::cout << (int)val << std::endl;
-		//	summedGreyvalues = summedGreyvalues + (int)val;
-		//	++countedPixel;
-
-		//	++imageIterator;
-		//}
-		//double meanValue = summedGreyvalues / countedPixel;
-		//std::cout << "Sum of Greyvalues: " << summedGreyvalues << std::endl;
-		//std::cout << "Number of passed pixels: " << countedPixel << std::endl;
-		//std::cout << "Mean Value: " << meanValue << std::endl;
-
-
-		//typedef itk::StatisticsImageFilter<ImageType> StatisticsImageFilterType;
-		//StatisticsImageFilterType::Pointer statisticsImageFilter
-		//	= StatisticsImageFilterType::New();
-		//statisticsImageFilter->SetInput(img);
-		//statisticsImageFilter->Update();
-
-		//std::cout << "Statistic over all voxels " << std::endl;
-		//std::cout << "Mean: " << statisticsImageFilter->GetMean() << std::endl;
-		//std::cout << "Std.: " << statisticsImageFilter->GetSigma() << std::endl;
-		//std::cout << "Min: " << statisticsImageFilter->GetMinimum() << std::endl;
-		//std::cout << "Max: " << statisticsImageFilter->GetMaximum() << std::endl;
 
 		//Estimate the tissue values means and sigmas inside the mask
 		typedef itk::LabelStatisticsImageFilter< ImageType, ImageType > LabelStatisticsImageFilterType;
@@ -115,7 +70,9 @@ namespace BiasCorrection
 				}
 			}
 		}
+		itk::Array<double> means(1);
 		means[0] = labelStatisticsImageFilter->GetMean(wantedLabel);
+		itk::Array<double> sigmas(1);
 		sigmas[0] = labelStatisticsImageFilter->GetSigma(wantedLabel);
 
 		std::cout << "Used Mean Value for Bias Correction: " << means[0] << std::endl;
@@ -230,7 +187,7 @@ namespace BiasCorrection
 		shadingFilter->SetTissueClassStatistics(means, sigmas);
 		shadingFilter->Update();
 		shadingFilter->GetOutput();
-		std::cout << "Biasfield estimation on downsampled data has finished. Begin Correction of original image data" << endl;
+		std::cout << "Bias-field estimation on downsampled data has finished. Begin correction of original image data." << endl;
 
 		//use old biasfield coefficients from downsampled bias filtering for usage on image data of original size.
 		ShadingFilterType::Pointer shadingFilterOriginal = ShadingFilterType::New();
@@ -239,12 +196,12 @@ namespace BiasCorrection
 		shadingFilterOriginal->SetTissueClassStatistics(means, sigmas);
 		shadingFilterOriginal->Initialize();
 		shadingFilterOriginal->SetInitialBiasFieldCoefficients(shadingFilter->GetEstimatedBiasFieldCoefficients() );
-		//shadingFilterOriginal->SetInterSliceCorrectionMaximumIteration(100);
-		//shadingFilterOriginal->SetVolumeCorrectionMaximumIteration(100);
+		shadingFilterOriginal->SetInterSliceCorrectionMaximumIteration(iterationsInterSlice);
+		shadingFilterOriginal->SetVolumeCorrectionMaximumIteration(iterationsSingleSlice);
 
 		shadingFilterOriginal->Update();
 
-        std::cout << "finished BiasFiledCorrection" << std::endl;
+        std::cout << "Finished BiasFieldCorrection." << std::endl;
 		vtkSmartPointer<vtkImageData> correctedImg = Converter::ConvertITKToVTK<ImageType>(shadingFilterOriginal->GetOutput());
 		return correctedImg;
 

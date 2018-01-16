@@ -216,16 +216,11 @@ int main(int argc, char** argv)
 	displayImages(imageData, imageMasks);
 
 	// correction of shading/bias artefact
-	// how to estimate those values? look into preoperative data and 
-	// choose wisely with reference to where the mask is located!
-	// Examplevalues for P05 data: mean 200, sigma 120
-	itk::Array<double> means(1);
-	means.SetElement(0, 400);
-	itk::Array<double> sigmas(1);
-	sigmas.SetElement(0, 350);
 	double scalingFactor = 2;
 	bool scaling = true; //if set to false, scalingFactor won't be used.
-	vtkSmartPointer<vtkImageData> biasCorrectedImageData = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), means, sigmas, scalingFactor, scaling);
+	int iterationsSingleSlice = 700; //set number of iterations for inter-slice inhomogeneity correction 
+	int iterationsInterSlice = 100; //set number of iterations for single-slice bias-field correction
+	vtkSmartPointer<vtkImageData> biasCorrectedImageData = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), scalingFactor, scaling, iterationsSingleSlice, iterationsInterSlice);
    
 	// display everything
 	imageMasks.clear();
