@@ -212,17 +212,19 @@ int main(int argc, char** argv)
 	loadData(options, imageData, imageMasks);
 
 	// denoising image
-	vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,2,100);
+	//vtkSmartPointer<vtkImageData> smoothedImageData = Denoising::bilateralFilter(imageData,2,100);
+	displayImages(imageData, imageMasks);
 
 	// correction of shading/bias artefact
-	itk::Array<double> means(1);
-	means.SetElement(0, 550);
-	itk::Array<double> sigmas(1);
-	sigmas.SetElement(0, 410);
-	vtkSmartPointer<vtkImageData> biasCorrectedImageData = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), means, sigmas);
+	double scalingFactor = 2;
+	bool scaling = true; //if set to false, scalingFactor won't be used.
+	int iterationsSingleSlice = 700; //set number of iterations for inter-slice inhomogeneity correction 
+	int iterationsInterSlice = 100; //set number of iterations for single-slice bias-field correction
+	vtkSmartPointer<vtkImageData> biasCorrectedImageData = BiasCorrection::shadingFilter(imageData, imageMasks.at(0), scalingFactor, scaling, iterationsSingleSlice, iterationsInterSlice);
    
 	// display everything
-	displayImages(imageData, imageMasks);
+	imageMasks.clear();
+	displayImages(biasCorrectedImageData, imageMasks);
 
     return 0;
 }

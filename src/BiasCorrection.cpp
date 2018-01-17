@@ -9,66 +9,203 @@
 #include "Helpers/TypeDefinitions.h"
 
 #include "itkResampleImageFilter.h"
+#include <itkNearestNeighborInterpolateImageFunction.h>
+#include <algorithm>    // std::min_element, std::max_element
+
+#include "itkLabelStatisticsImageFilter.h"
 
 namespace BiasCorrection
 {
 
-	vtkSmartPointer<vtkImageData> shadingFilter(vtkSmartPointer<vtkImageData> imageData, vtkSmartPointer<vtkImageData> maskData, itk::Array<double> means, itk::Array<double> sigmas)
+	vtkSmartPointer<vtkImageData> shadingFilter(vtkSmartPointer<vtkImageData> imageData, vtkSmartPointer<vtkImageData> maskData, 
+		double scalingFactor, bool scaling, int iterationsSingleSlice, int iterationsInterSlice)
 	{
 		//convert imageData from VTK to ITK image
-        ImageType::Pointer img = Converter::ConvertVTKToITK<ImageType>( imageData );
+		ImageType::Pointer img = Converter::ConvertVTKToITK<ImageType>(imageData);
+		ImageType::Pointer imgMask = Converter::ConvertVTKToITK<ImageType>(maskData);
 
-        double scale = 2;
-        std::cout << "start resampling" << std::endl;
-        itk::ResampleImageFilter<ImageType, ImageType>::Pointer resampleFilter =
-                itk::ResampleImageFilter<ImageType, ImageType>::New();
-        ImageType::SizeType inputSize = img->GetLargestPossibleRegion().GetSize();
-        ImageType::SizeType outputSize;
-        outputSize[0] = inputSize[0] / scale;
-        outputSize[1] = inputSize[1] / scale;
-        outputSize[2] = inputSize[2] / scale;
-        ImageType::SpacingType outputSpacing;
-        outputSpacing[0] = img->GetSpacing()[0] * scale;
-        outputSpacing[1] = img->GetSpacing()[1] * scale;
-        outputSpacing[2] = img->GetSpacing()[2] * scale;
-        resampleFilter->SetSize( outputSize );
-        resampleFilter->SetInput( img );
-        resampleFilter->SetOutputSpacing( outputSpacing );
-        resampleFilter->SetTransform( itk::IdentityTransform<double,3>::New() );
-        resampleFilter->UpdateLargestPossibleRegion();
-        ImageType::Pointer resampledImage = resampleFilter->GetOutput();
-        std::cout << "resampling finished" << std::endl;
+		//Estimate the tissue values means and sigmas inside the mask
+		typedef itk::LabelStatisticsImageFilter< ImageType, ImageType > LabelStatisticsImageFilterType;
+		LabelStatisticsImageFilterType::Pointer labelStatisticsImageFilter = LabelStatisticsImageFilterType::New();
+		labelStatisticsImageFilter->SetLabelInput(imgMask);
+		labelStatisticsImageFilter->SetInput(img);
+		labelStatisticsImageFilter->Update();
 
-		//convert maskData from VTK to ITK image
-        //ImageType::Pointer mask = Converter::ConvertVTKToITK<ImageType>( maskData );
+		std::cout << "Statistic over masked voxels " << std::endl;
+		std::cout << "Number of labels: " << labelStatisticsImageFilter->GetNumberOfLabels() << std::endl;
+		std::cout << std::endl;
 
-        std::cout << "start BiasFiledCorrection" << std::endl;
-        typedef itk::MRIBiasFieldCorrectionFilter< ImageType, ImageType, ImageType > ShadingFilterType;
-        ShadingFilterType::Pointer shadingFilter = ShadingFilterType::New();
-        shadingFilter->SetInput( resampledImage );
-        shadingFilter->SetTissueClassStatistics(means, sigmas);
-        shadingFilter->SetBiasFieldMultiplicative( true );
-        shadingFilter->GetOutputMask();
+		typedef LabelStatisticsImageFilterType::ValidLabelValuesContainerType ValidLabelValuesType;
+		typedef LabelStatisticsImageFilterType::LabelPixelType                LabelPixelType;
 
-#if 0
-        shadingFilter->Initialize();
-        ShadingFilterType::BiasFieldType biasfield =
-            shadingFilter->EstimateBiasField( resampledImage->GetLargestPossibleRegion(),
-                                              shadingFilter->GetBiasFieldDegree(),
-                                              shadingFilter->GetVolumeCorrectionMaximumIteration() );
+		double maximumMeanValue = 0;
+		LabelPixelType wantedLabel = 0;
 
 
-        // convert ITK to VTK image
-        //ImageType::Pointer image = shadingFilter->GetOutput();
-        shadingFilter->SetInput( img );
-        shadingFilter->SetInitialBiasFieldCoefficients( biasfield.GetCoefficients() );
-        shadingFilter->Initialize();
-        shadingFilter->SetVolumeCorrectionMaximumIteration( 1 );
-        shadingFilter->SetInterSliceCorrectionMaximumIteration( 1 );
-#endif
+		for (ValidLabelValuesType::const_iterator vIt = labelStatisticsImageFilter->GetValidLabelValues().begin();
+			vIt != labelStatisticsImageFilter->GetValidLabelValues().end();
+			++vIt)
+		{
+			if (labelStatisticsImageFilter->HasLabel(*vIt))
+			{
+				LabelPixelType labelValue = *vIt;
+				std::cout << "min: " << labelStatisticsImageFilter->GetMinimum(labelValue) << std::endl;
+				std::cout << "max: " << labelStatisticsImageFilter->GetMaximum(labelValue) << std::endl;
+				std::cout << "median: " << labelStatisticsImageFilter->GetMedian(labelValue) << std::endl;
+				std::cout << "mean: " << labelStatisticsImageFilter->GetMean(labelValue) << std::endl;
+				std::cout << "sigma: " << labelStatisticsImageFilter->GetSigma(labelValue) << std::endl;
+				std::cout << "variance: " << labelStatisticsImageFilter->GetVariance(labelValue) << std::endl;
+				std::cout << "sum: " << labelStatisticsImageFilter->GetSum(labelValue) << std::endl;
+				std::cout << "count: " << labelStatisticsImageFilter->GetCount(labelValue) << std::endl;
+				//std::cout << "box: " << labelStatisticsImageFilter->GetBoundingBox( labelValue ) << std::endl; // can't output a box
+				std::cout << "region: " << labelStatisticsImageFilter->GetRegion(labelValue) << std::endl;
+				std::cout << std::endl << std::endl;
 
-        std::cout << "finished BiasFiledCorrection" << std::endl;
-        return Converter::ConvertITKToVTK<ImageType>(shadingFilter->GetOutput());
+				/*Since the usage of contrast agent, the tissue or label with a higher mean value should
+				be the wanted, representing the enhanced liver tissue.*/
+				if (labelStatisticsImageFilter->GetMean(labelValue) > maximumMeanValue)
+				{
+					maximumMeanValue = labelStatisticsImageFilter->GetMean(labelValue);
+					wantedLabel = labelValue;
+				}
+			}
+		}
+		itk::Array<double> means(1);
+		means[0] = labelStatisticsImageFilter->GetMean(wantedLabel);
+		itk::Array<double> sigmas(1);
+		sigmas[0] = labelStatisticsImageFilter->GetSigma(wantedLabel);
+
+		std::cout << "Used Mean Value for Bias Correction: " << means[0] << std::endl;
+		std::cout << "Used Sigma Value for Bias Correction: " << sigmas[0] << std::endl;
+
+
+		//Calculate wanted output size and output spacing for usage of resampling Filter.
+		ImageType::SizeType inputSize = img->GetLargestPossibleRegion().GetSize();
+		itk::Vector<double> inputSpacing = img->GetSpacing();
+		ImageType::SizeType outputSize;
+		ImageType::SpacingType outputSpacing;
+		/*
+		There exist two ways to reduce the amount of data points. 
+		The first way is scaling, which reduces the number of datapoints by a scaling factor.
+		e.g. scalingFactor = 2 --> structure with [20 42 24] points will be scaled to [10 21 12]
+		The second way is respacing, especially to obtain an isotropic pixel spacing so that
+		each voxel will be a cube with all sides of equal length.
+		*/
+		if (scaling == true) //first option, sample reduction by scaling
+		{
+			std::cout << "Start resampling by scaling with scaling factor of " << scalingFactor << std::endl;
+			
+			outputSize[0] = inputSize[0] / scalingFactor;
+			outputSize[1] = inputSize[1] / scalingFactor;
+			outputSize[2] = inputSize[2] / scalingFactor;
+
+			std::cout << "Input size:" << inputSize << std::endl;
+			std::cout << "Output size:" << outputSize << std::endl;
+
+			//calculate Spacing
+			outputSpacing[0] = inputSpacing[0] * (inputSize[0] / outputSize[0]);
+			outputSpacing[1] = inputSpacing[1] * (inputSize[1] / outputSize[1]);
+			outputSpacing[2] = inputSpacing[2] * (inputSize[2] / outputSize[2]);
+			
+			std::cout << "Input spacing: " << inputSpacing << std::endl;
+			std::cout << "Output spacing: " << outputSpacing << std::endl;
+
+			//std::cout << "Absolute size of original data: " << inputSize[0] * inputSpacing[0] << ' ' << inputSize[1] * inputSpacing[1] << ' ' << inputSize[2] * inputSpacing[2] << std::endl;
+			//std::cout << "Absolute size of resampled data: " << outputSize[0] * outputSpacing[0] << ' ' << outputSize[1] * outputSpacing[1] << ' ' << outputSize[2] * outputSpacing[2] << std::endl;
+
+		}
+		else //second option, sample reduction by isotropic spacing
+		{
+			std::cout << "Start resampling by isotropic Voxel Spacing." << std::endl;
+
+			// Find the largest spacing (mostly spacing of 3D image slice thickness)
+			int numberOfElements = inputSpacing.Length; // establish size of array
+			float maximumSpacing = inputSpacing[0];     // start with max = first element
+			for (int i = 1; i < numberOfElements; i++)
+			{
+				if (inputSpacing[i] > maximumSpacing)
+					maximumSpacing = inputSpacing[i];
+			}
+			std::cout << "Maximum value of input spacing: " << maximumSpacing << std::endl;
+
+			outputSpacing[0] = maximumSpacing;
+			outputSpacing[1] = maximumSpacing;
+			outputSpacing[2] = maximumSpacing;
+
+			std::cout << "Input spacing: " << inputSpacing << std::endl;
+			std::cout << "Output spacing: " << outputSpacing << std::endl;
+
+			//calculate Size
+			outputSize[0] = inputSize[0] * (inputSpacing[0] / outputSpacing[0]);
+			outputSize[1] = inputSize[1] * (inputSpacing[1] / outputSpacing[1]);
+			outputSize[2] = inputSize[2] * (inputSpacing[2] / outputSpacing[2]);
+
+			std::cout << "Input size: " << inputSize << std::endl;
+			std::cout << "Output size: " << outputSize << std::endl;
+
+			//std::cout << "Absolute size of original data: " << inputSize[0] * inputSpacing[0] << ' ' << inputSize[1] * inputSpacing[1] << ' ' << inputSize[2] * inputSpacing[2] << std::endl;
+			//std::cout << "Absolute size of resampled data: " << outputSize[0] * outputSpacing[0] << ' ' << outputSize[1] * outputSpacing[1] << ' ' << outputSize[2] * outputSpacing[2] << std::endl;
+		}
+
+		//resampling of image data
+		itk::ResampleImageFilter<ImageType, ImageType>::Pointer resampleFilterForImage =
+			itk::ResampleImageFilter<ImageType, ImageType>::New();
+		resampleFilterForImage->SetInput( img );
+		resampleFilterForImage->SetSize(outputSize);
+		resampleFilterForImage->SetOutputSpacing( outputSpacing );
+		resampleFilterForImage->SetTransform( itk::IdentityTransform<double,3>::New() );
+		resampleFilterForImage->UpdateLargestPossibleRegion();
+        ImageType::Pointer resampledImage = resampleFilterForImage->GetOutput();
+        std::cout << "Resampling of image data has finished." << std::endl;
+
+		//resampling of mask data
+		itk::ResampleImageFilter<ImageType, ImageType>::Pointer resampleFilterForMask =
+			itk::ResampleImageFilter<ImageType, ImageType>::New();
+		resampleFilterForMask->SetInput(imgMask);
+		resampleFilterForMask->SetSize(outputSize);
+		resampleFilterForMask->SetOutputSpacing(outputSpacing);
+		resampleFilterForMask->SetTransform(itk::IdentityTransform<double, 3>::New());
+		resampleFilterForMask->SetInterpolator(itk::NearestNeighborInterpolateImageFunction<ImageType, double>::New() );
+		resampleFilterForMask->UpdateLargestPossibleRegion();
+		ImageType::Pointer resampledMask = resampleFilterForMask->GetOutput();
+		std::cout << "Resampling of mask data has finished." << std::endl;
+
+		// Konsolenausgabe resampling-Ergebnis des Bildes
+		//std::cout << "Image Output size: " << resampledImage->GetLargestPossibleRegion().GetSize() << std::endl;
+		//std::cout << "Image Output spacing: " << resampledImage->GetSpacing() << std::endl;
+
+		// Konsolenausgabe resampling-Ergebnis der Maske
+		//std::cout << "Mask Output size: " << resampledMask->GetLargestPossibleRegion().GetSize() << std::endl;
+		//std::cout << "Mask Output spacing: " << resampledMask->GetSpacing() << std::endl;
+
+
+		std::cout << "Start BiasFieldCorrection." << std::endl;
+		typedef itk::MRIBiasFieldCorrectionFilter< ImageType, ImageType, ImageType > ShadingFilterType;
+		ShadingFilterType::Pointer shadingFilter = ShadingFilterType::New();
+		shadingFilter->SetInput( resampledImage );
+		shadingFilter->SetInputMask( resampledMask );
+		shadingFilter->SetTissueClassStatistics(means, sigmas);
+		shadingFilter->Update();
+		shadingFilter->GetOutput();
+		std::cout << "Bias-field estimation on downsampled data has finished. Begin correction of original image data." << endl;
+
+		//use old biasfield coefficients from downsampled bias filtering for usage on image data of original size.
+		ShadingFilterType::Pointer shadingFilterOriginal = ShadingFilterType::New();
+		shadingFilterOriginal->SetInput( img );
+		shadingFilterOriginal->SetInputMask( imgMask );
+		shadingFilterOriginal->SetTissueClassStatistics(means, sigmas);
+		shadingFilterOriginal->Initialize();
+		shadingFilterOriginal->SetInitialBiasFieldCoefficients(shadingFilter->GetEstimatedBiasFieldCoefficients() );
+		shadingFilterOriginal->SetInterSliceCorrectionMaximumIteration(iterationsInterSlice);
+		shadingFilterOriginal->SetVolumeCorrectionMaximumIteration(iterationsSingleSlice);
+
+		shadingFilterOriginal->Update();
+
+        std::cout << "Finished BiasFieldCorrection." << std::endl;
+		vtkSmartPointer<vtkImageData> correctedImg = Converter::ConvertITKToVTK<ImageType>(shadingFilterOriginal->GetOutput());
+		return correctedImg;
+
 	}
+
 }
 
