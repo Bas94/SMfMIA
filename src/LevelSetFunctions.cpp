@@ -13,7 +13,8 @@
 #include "itkFastMarchingImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkBinaryThresholdImageFilter.h"
-
+#include "itkSobelEdgeDetectionImageFilter.h"
+#include "itkThresholdImageFilter.h"
 
 namespace LevelSet
 {
@@ -23,6 +24,7 @@ namespace LevelSet
 
 		ReaderType2D::Pointer reader = ReaderType2D::New();
 		reader->SetFileName(inputFileName);
+		reader->Update();
 		ReaderType2D::Pointer readerMask = ReaderType2D::New();
 		readerMask->SetFileName(inputMaskFileName);
 		readerMask->Update();
@@ -32,6 +34,7 @@ namespace LevelSet
 		GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
 		gradientMagnitude->SetSigma(sigma);		//gradientMagnitude->SetInput(readerMask->GetOutput());
 		gradientMagnitude->SetInput(bilateralSmoothedImage);
+
 
 		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(gradientMagnitude->GetOutput()));
 
@@ -55,11 +58,11 @@ namespace LevelSet
 		typedef  itk::GeodesicActiveContourLevelSetImageFilter< InputImageType2D, InputImageType2D >  GeodesicActiveContourFilterType;
 		GeodesicActiveContourFilterType::Pointer geodesicActiveContour = GeodesicActiveContourFilterType::New();
 		geodesicActiveContour->SetPropagationScaling(3.0);
-		geodesicActiveContour->SetCurvatureScaling(6.0);
-		geodesicActiveContour->SetAdvectionScaling(10.0);
+		geodesicActiveContour->SetCurvatureScaling(4.0);
+		geodesicActiveContour->SetAdvectionScaling(22.0);
 		geodesicActiveContour->SetMaximumRMSError(0.01);
 		//geodesicActiveContour->SetReverseExpansionDirection(true);
-		geodesicActiveContour->SetNumberOfIterations(3000);
+		geodesicActiveContour->SetNumberOfIterations(1000);
 		geodesicActiveContour->SetInput(fastMarching->GetOutput());
 		geodesicActiveContour->SetFeatureImage(sigmoid->GetOutput());
 
@@ -182,33 +185,43 @@ namespace LevelSet
 		}
 		// Display result of level set segmentation
 		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<OutputImageType2D>(thresholder->GetOutput()));
+		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType2D>(readerMask->GetOutput()));
+
 	}
 
 	void runLevelSet3D(OutputImageType3D::Pointer itkImageData, const std::string outputFileName, const std::string outputDirectory)
 	{
 		const double sigma = 1.0;
-	
 		typedef itk::RescaleIntensityImageFilter<OutputImageType3D , InputImageType3D > CastFilterTypeOutputToInput;
 
 		CastFilterTypeOutputToInput::Pointer caster = CastFilterTypeOutputToInput::New();
 		caster->SetInput(itkImageData);
 		caster->Update();
-		
-		//InputImageType3D::Pointer bilateralSmoothedImage = Denoising::bilateralFilterTemplate<InputImageType3D>(itkImageData, 2, 100);
+		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType3D>(caster->GetOutput()));
+		InputImageType3D::Pointer bilateralSmoothedImage = Denoising::bilateralFilterTemplate<InputImageType3D>(caster->GetOutput(), 2, 100);
 		typedef  itk::GradientMagnitudeRecursiveGaussianImageFilter< InputImageType3D, InputImageType3D > GradientFilterType;
 		GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
 		gradientMagnitude->SetSigma(sigma);		//gradientMagnitude->SetInput(readerMask->GetOutput());
 		gradientMagnitude->SetInput(caster->GetOutput());
+		
+		typedef itk::SobelEdgeDetectionImageFilter< InputImageType3D, InputImageType3D >
+			FilterType;
+		FilterType::Pointer filter = FilterType::New();
+		filter->SetInput(bilateralSmoothedImage);
+		filter->Update();
+		
+	SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType3D>(filter->GetOutput()));
+		
+		//std::cout << "caster image dimension" << gradientMagnitude->GetOutput()<< std::endl;
 
 		typedef  itk::SigmoidImageFilter< InputImageType3D, InputImageType3D > SigmoidFilterType;
 		SigmoidFilterType::Pointer sigmoid = SigmoidFilterType::New();
 		sigmoid->SetOutputMinimum(0.0);
 		sigmoid->SetOutputMaximum(1.0);
 		sigmoid->SetAlpha(25);
-		sigmoid->SetBeta(100);
-		sigmoid->SetInput(gradientMagnitude->GetOutput());
-		typedef itk::RescaleIntensityImageFilter< InputImageType3D, OutputImageType3D > CastFilterType;
-				
+		sigmoid->SetBeta(300);
+		sigmoid->SetInput(bilateralSmoothedImage);
+
 		
 		typedef  itk::FastMarchingImageFilter< InputImageType3D, InputImageType3D > FastMarchingFilterType;
 		FastMarchingFilterType::Pointer  fastMarching = FastMarchingFilterType::New();
@@ -218,10 +231,11 @@ namespace LevelSet
 		geodesicActiveContour->SetPropagationScaling(3.0);
 		geodesicActiveContour->SetCurvatureScaling(6.0);
 		geodesicActiveContour->SetAdvectionScaling(10.0);
-		geodesicActiveContour->SetMaximumRMSError(0.01);
+		geodesicActiveContour->SetMaximumRMSError(0.0001);
 		//geodesicActiveContour->SetReverseExpansionDirection(true);
 		geodesicActiveContour->SetNumberOfIterations(3000);
 		geodesicActiveContour->SetInput(fastMarching->GetOutput());
+
 		geodesicActiveContour->SetFeatureImage(sigmoid->GetOutput());
 	
 		typedef itk::BinaryThresholdImageFilter< InputImageType3D, OutputImageType3D > ThresholdingFilterType;
@@ -236,9 +250,9 @@ namespace LevelSet
 		typedef FastMarchingFilterType::NodeType       NodeType;
 
 		InputImageType3D::IndexType  seedPosition;
-		seedPosition[0] = 55;
-		seedPosition[1] = 55;
-		seedPosition[2] = 55;
+		seedPosition[0] = 60;
+		seedPosition[1] = 73;
+		seedPosition[2] = 2;
 		NodeContainer::Pointer seeds = NodeContainer::New();
 		NodeType node;
 		node.SetValue(-5.0);
@@ -249,8 +263,17 @@ namespace LevelSet
 
 		fastMarching->SetTrialPoints(seeds);
 		fastMarching->SetSpeedConstant(1.0);
-		fastMarching->SetOutputSize(
-			sigmoid->GetOutput()->GetBufferedRegion().GetSize());
+		sigmoid->Update();
+		fastMarching->SetOutputSize(sigmoid->GetOutput()->GetBufferedRegion().GetSize());
+		fastMarching->SetOutputSpacing(sigmoid->GetOutput()->GetSpacing());
+		
+		fastMarching->Update();
+		std::cout << "fastMarching Output [0] " << fastMarching->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << "fastMarching Output [1] " << fastMarching->GetOutput()->GetLargestPossibleRegion().GetSize()[1] << "fastMarching Output [2] " << fastMarching->GetOutput()->GetLargestPossibleRegion().GetSize()[2] << std::endl;
+		std::cout << "sigmoid Output [0] " << sigmoid->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << "sigmoid Output [1] " << sigmoid->GetOutput()->GetLargestPossibleRegion().GetSize()[1] << "sigmoid Output [2] " << sigmoid->GetOutput()->GetLargestPossibleRegion().GetSize()[2] << std::endl;
+		std::cout << "No. elpased iterations: " << geodesicActiveContour->GetElapsedIterations() << std::endl;
+		std::cout << "RMS change: " << geodesicActiveContour->GetRMSChange() << std::endl;
+
 		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<OutputImageType3D>(thresholder->GetOutput()));
+
 	}
 }
