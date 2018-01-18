@@ -153,6 +153,7 @@ set( HDR_LIST fileHelpers/DICOMLoaderVTK.h
               ContourToMask.h
               BiasCorrection.h
 			  LevelSetFunctions.h
+			  fileHelpers/WriteDCM.h
               )
 				
 # create the executable
@@ -195,6 +196,9 @@ add_executable(levelSetCopyPasteTest test/levelSetCopyPasteTest.cpp
 									LevelSetFunctions.h
 									Helpers/Converter.h
 									fileHelpers/DICOMLoaderVTK.cpp
-									fileHelpers/DICOMLoaderVTK.h)
+									fileHelpers/DICOMLoaderVTK.h
+									Helpers/Validator.cpp
+									Helpers/Validator.h
+									fileHelpers/WriteDCM.h)
 target_link_libraries( levelSetCopyPasteTest ${PROJECT_LIBRARIES} )
 
