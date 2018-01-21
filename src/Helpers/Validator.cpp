@@ -27,8 +27,9 @@ double diceCoeff2DSlice( MaskType2D::Pointer mask, MaskType2D::Pointer groundtru
         {
             index[0] = x;
             index[1] = y;
-            bool maskIsSet = static_cast<bool>( mask->GetPixel( index ) );
-            bool groundtruthIsSet = static_cast<bool>( groundtruth->GetPixel( index ) );
+            bool maskIsSet = static_cast<bool>( mask->GetPixel( index )>0 );
+			
+            bool groundtruthIsSet = static_cast<bool>( groundtruth->GetPixel( index )>0 );
             if( maskIsSet ) maskCnt++;
             if( groundtruthIsSet ) groundtruthCnt++;
             if( groundtruthIsSet && maskIsSet ) maskAndGroundtruthCnt++;
