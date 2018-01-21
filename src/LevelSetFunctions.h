@@ -23,11 +23,9 @@ namespace LevelSet
 
 	typedef  itk::ImageFileReader< InputImageType3D >  ReaderType3D;
 	typedef  itk::ImageFileWriter< OutputImageType3D > WriterType3D;
-
-	//TODO: output of itkImage
-	void runLevelSet2D(const std::string inputFileName, const std::string inputMaskFileName, const std::string outputFileName, const std::string outputDirectory);
+		
+	OutputImageType2D::Pointer runLevelSet2D(const std::string inputFileName, LevelSet::ReaderType2D::Pointer readerMask, const std::string outputFileName, const std::string outputDirectory, const double sigma, const int alpha, const int beta,const double propagationScaling, const double curvaturScaling, const double advectionScaling, const double numberOfIterations);
 	
-	//TODO: output of itkImage
 	void runLevelSet3D(OutputImageType3D::Pointer itkImageData, const std::string outputFileName, const std::string outputDirectory);
 
 	template<typename itkImageType>
@@ -53,9 +51,12 @@ namespace LevelSet
 				}
 			}
 		}
-		mean_x = mean_x / nPixelsMask;
-		mean_y = mean_y / nPixelsMask;
+		if (nPixelsMask != 0)
+		{
+			mean_x = mean_x / nPixelsMask;
+			mean_y = mean_y / nPixelsMask;
 
+		}
 		std::vector<int> outputValues;
 		outputValues.push_back(mean_x);
 		outputValues.push_back(mean_y);

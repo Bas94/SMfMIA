@@ -182,7 +182,7 @@ target_link_libraries( fit3DMaskContourToImageTest ${PROJECT_LIBRARIES} )
 #add_executable(levelSetTest test/levelSetTest.cpp ${SRC_LIST} ${HDR_LIST} )
 #target_link_libraries( levelSetTest ${PROJECT_LIBRARIES} )
 
-add_executable(levelSetCopyPasteTest test/levelSetCopyPasteTest.cpp 
+add_executable(levelSet test/levelSet.cpp 
 									SMfMIAInteractorStyle.cpp
                                     SMfMIAInteractorStyle.h
 									SMfMIAImageViewer.cpp
@@ -200,5 +200,5 @@ add_executable(levelSetCopyPasteTest test/levelSetCopyPasteTest.cpp
 									Helpers/Validator.cpp
 									Helpers/Validator.h
 									fileHelpers/WriteDCM.h)
-target_link_libraries( levelSetCopyPasteTest ${PROJECT_LIBRARIES} )
+target_link_libraries( levelSet ${PROJECT_LIBRARIES} )
 

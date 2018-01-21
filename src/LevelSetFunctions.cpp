@@ -7,6 +7,7 @@
 #include "Helpers/Converter.h"
 
 #include "itkGeodesicActiveContourLevelSetImageFilter.h"
+
 #include "itkCurvatureAnisotropicDiffusionImageFilter.h"
 #include "itkGradientMagnitudeRecursiveGaussianImageFilter.h"
 #include "itkSigmoidImageFilter.h"
@@ -18,57 +19,55 @@
 
 namespace LevelSet
 {
-	void runLevelSet2D(const std::string inputFileName, const std::string inputMaskFileName, const std::string outputFileName, const std::string outputDirectory)
-	{
-		const double sigma = 1.0;
+	OutputImageType2D::Pointer runLevelSet2D(const std::string inputFileName, LevelSet::ReaderType2D::Pointer readerMask, const std::string outputFileName, const std::string outputDirectory, const double sigma, const int alpha, const int beta, const double propagationScaling, const double curvaturScaling, const double advectionScaling, const double numberOfIterations)
+	{	
 
 		ReaderType2D::Pointer reader = ReaderType2D::New();
 		reader->SetFileName(inputFileName);
 		reader->Update();
-		ReaderType2D::Pointer readerMask = ReaderType2D::New();
-		readerMask->SetFileName(inputMaskFileName);
-		readerMask->Update();
 
-		InputImageType2D::Pointer bilateralSmoothedImage = Denoising::bilateralFilterTemplate<InputImageType2D>(reader->GetOutput(), 2, 100);
+
+		InputImageType2D::Pointer smoothedImageData = Denoising::bilateralFilterTemplate<InputImageType2D>(reader->GetOutput(), 2, 100);
 		typedef  itk::GradientMagnitudeRecursiveGaussianImageFilter< InputImageType2D, InputImageType2D > GradientFilterType;
 		GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
-		gradientMagnitude->SetSigma(sigma);		//gradientMagnitude->SetInput(readerMask->GetOutput());
-		gradientMagnitude->SetInput(bilateralSmoothedImage);
+		gradientMagnitude->SetSigma(sigma);		
+		gradientMagnitude->SetInput(smoothedImageData);
 
-
-		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(gradientMagnitude->GetOutput()));
+		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType2D>(gradientMagnitude->GetOutput()));
 
 		typedef  itk::SigmoidImageFilter< InputImageType2D, InputImageType2D > SigmoidFilterType2D;
 		SigmoidFilterType2D::Pointer sigmoid = SigmoidFilterType2D::New();
 		sigmoid->SetOutputMinimum(0.0);
 		sigmoid->SetOutputMaximum(1.0);
-		sigmoid->SetAlpha(25);
-		sigmoid->SetBeta(100);
+		sigmoid->SetAlpha(alpha);
+		sigmoid->SetBeta(beta);
 		sigmoid->SetInput(gradientMagnitude->GetOutput());
-		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(sigmoid->GetOutput()));
 		//  The FastMarchingImageFilter requires the user to provide a seed
 		//  point from which the level set will be generated. The user can actually
 		//  pass not only one seed point but a set of them. Note the the
 		//  FastMarchingImageFilter is used here only as a helper in the
 		//  determination of an initial level set. We could have used the
 		//  \doxygen{DanielssonDistanceMapImageFilter} in the same way.
+
+
+		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType2D>(sigmoid->GetOutput()));
 		typedef  itk::FastMarchingImageFilter< InputImageType2D, InputImageType2D > FastMarchingFilterType;
 		FastMarchingFilterType::Pointer  fastMarching = FastMarchingFilterType::New();
 
 		typedef  itk::GeodesicActiveContourLevelSetImageFilter< InputImageType2D, InputImageType2D >  GeodesicActiveContourFilterType;
 		GeodesicActiveContourFilterType::Pointer geodesicActiveContour = GeodesicActiveContourFilterType::New();
-		geodesicActiveContour->SetPropagationScaling(3.0);
-		geodesicActiveContour->SetCurvatureScaling(4.0);
-		geodesicActiveContour->SetAdvectionScaling(22.0);
+		geodesicActiveContour->SetPropagationScaling(propagationScaling);
+		geodesicActiveContour->SetCurvatureScaling(curvaturScaling);
+		geodesicActiveContour->SetAdvectionScaling(advectionScaling);
 		geodesicActiveContour->SetMaximumRMSError(0.01);
-		//geodesicActiveContour->SetReverseExpansionDirection(true);
-		geodesicActiveContour->SetNumberOfIterations(1000);
+		geodesicActiveContour->SetNumberOfIterations(numberOfIterations);
 		geodesicActiveContour->SetInput(fastMarching->GetOutput());
 		geodesicActiveContour->SetFeatureImage(sigmoid->GetOutput());
-
+			
 
 
 		typedef itk::BinaryThresholdImageFilter< InputImageType2D, OutputImageType2D > ThresholdingFilterType;
+
 		ThresholdingFilterType::Pointer thresholder = ThresholdingFilterType::New();
 		thresholder->SetLowerThreshold(-1000.0);
 		thresholder->SetUpperThreshold(0.0);
@@ -103,9 +102,11 @@ namespace LevelSet
 
 		NodeContainer::Pointer seeds = NodeContainer::New();
 		NodeType node;
-		node.SetValue(-5.0);
+		node.SetValue(-(mean_d/4));//-5
 		node.SetIndex(seedPosition);
 
+		std::cout << "Seedpoint x: " << seedPoint[0] << " Seedpoint y: " << seedPoint[1] <<std::endl;
+		std::cout << "Durchschnittliche Distanz: " << mean_d/2 << std::endl;
 		seeds->Initialize();
 		seeds->InsertElement(0, node);
 
@@ -124,9 +125,8 @@ namespace LevelSet
 		WriterType2D::Pointer writer3 = WriterType2D::New();
 		WriterType2D::Pointer writer4 = WriterType2D::New();
 
-		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType>(sigmoid->GetOutput()));
 
-		caster1->SetInput(bilateralSmoothedImage);
+		caster1->SetInput(reader->GetOutput());
 		writer1->SetInput(caster1->GetOutput());
 		writer1->SetFileName(outputDirectory + "GeodesicActiveContourImageFilterOutput1.dcm");
 		caster1->SetOutputMinimum(itk::NumericTraits< OutputPixelType2D >::min());
@@ -147,26 +147,11 @@ namespace LevelSet
 		caster3->SetOutputMaximum(itk::NumericTraits< OutputPixelType2D >::max());
 		writer3->Update();
 
-		caster4->SetInput(geodesicActiveContour->GetOutput());
-		writer4->SetInput(caster4->GetOutput());
-		writer4->SetFileName(outputDirectory + "GeodesicActiveContourImageFilterOutput4.dcm");
-		caster4->SetOutputMinimum(itk::NumericTraits< OutputPixelType2D >::min());
-		caster4->SetOutputMaximum(itk::NumericTraits< OutputPixelType2D >::max());
 
 		fastMarching->SetOutputSize(
 			reader->GetOutput()->GetBufferedRegion().GetSize());
 
-		WriterType2D::Pointer writer = WriterType2D::New();
-		writer->SetFileName(outputDirectory+outputFileName);
-		writer->SetInput(thresholder->GetOutput());
-		try
-		{
-			writer->Update();
-		}
-		catch (itk::ExceptionObject & error)
-		{
-			std::cerr << "Error: " << error << std::endl;
-		}
+	
 
 		std::cout << std::endl;
 		std::cout << "Max. no. iterations: " << geodesicActiveContour->GetNumberOfIterations() << std::endl;
@@ -175,26 +160,19 @@ namespace LevelSet
 		std::cout << "No. elpased iterations: " << geodesicActiveContour->GetElapsedIterations() << std::endl;
 		std::cout << "RMS change: " << geodesicActiveContour->GetRMSChange() << std::endl;
 
-		try
-		{
-			writer4->Update();
-		}
-		catch (itk::ExceptionObject & error)
-		{
-			std::cerr << "Error: " << error << std::endl;
-		}
-		// Display result of level set segmentation
-		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<OutputImageType2D>(thresholder->GetOutput()));
-		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType2D>(readerMask->GetOutput()));
 
+		thresholder->Update();
+		OutputImageType2D::Pointer test = thresholder->GetOutput();
+		
+		return test;
 	}
 
 	void runLevelSet3D(OutputImageType3D::Pointer itkImageData, const std::string outputFileName, const std::string outputDirectory)
 	{
 		const double sigma = 1.0;
-		typedef itk::RescaleIntensityImageFilter<OutputImageType3D , InputImageType3D > CastFilterTypeOutputToInput;
+		typedef itk::RescaleIntensityImageFilter<OutputImageType3D , InputImageType3D > CastFilterTypeOutputToInput3D;
 
-		CastFilterTypeOutputToInput::Pointer caster = CastFilterTypeOutputToInput::New();
+		CastFilterTypeOutputToInput3D::Pointer caster = CastFilterTypeOutputToInput3D::New();
 		caster->SetInput(itkImageData);
 		caster->Update();
 		SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType3D>(caster->GetOutput()));
@@ -228,9 +206,9 @@ namespace LevelSet
 
 		typedef  itk::GeodesicActiveContourLevelSetImageFilter< InputImageType3D, InputImageType3D >  GeodesicActiveContourFilterType;
 		GeodesicActiveContourFilterType::Pointer geodesicActiveContour = GeodesicActiveContourFilterType::New();
-		geodesicActiveContour->SetPropagationScaling(3.0);
+		geodesicActiveContour->SetPropagationScaling(2.0);
 		geodesicActiveContour->SetCurvatureScaling(6.0);
-		geodesicActiveContour->SetAdvectionScaling(10.0);
+		geodesicActiveContour->SetAdvectionScaling(8.0);
 		geodesicActiveContour->SetMaximumRMSError(0.0001);
 		//geodesicActiveContour->SetReverseExpansionDirection(true);
 		geodesicActiveContour->SetNumberOfIterations(3000);
