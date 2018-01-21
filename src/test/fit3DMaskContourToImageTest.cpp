@@ -4,6 +4,8 @@
 #include "ContourToMask.h"
 #include "Helpers/Validator.h"
 #include "Helpers/Converter.h"
+#include "BiasCorrection.h"
+#include "Denoising.h"
 
 #include <vtkExtractVOI.h>
 
@@ -26,7 +28,7 @@ int main( int argc, char** argv )
     double smoothingSigma = 2;
     double iterations = 130;
 
-    std::cerr << "load data" << std::endl;
+    std::cerr << "load data" << argv[1] << std::endl;
     vtkSmartPointer<vtkImageData> image =
             DICOMLoaderVTK::loadDICOMSeries( std::string( argv[1] ) );
 
@@ -37,6 +39,11 @@ int main( int argc, char** argv )
             DICOMLoaderVTK::loadDICOMSeries( std::string( argv[3] ) );
 
     int* dim = mask->GetDimensions();
+
+    //image = BiasCorrection::shadingFilter( image, mask, 2, true, 500, 500 );
+    ImageType::Pointer itkImg = Converter::ConvertVTKToITK<ImageType>( image );
+    itkImg =Denoising::bilateralFilterTemplate<ImageType>( itkImg, 2, 100 );
+    image = Converter::ConvertITKToVTK<ImageType>( itkImg );
 
     std::cerr << "find initial contours" << std::endl;
     std::vector< std::vector<Contour> > contoursPerSclice;
