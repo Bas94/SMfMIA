@@ -12,15 +12,22 @@
 		typedef itk::ImageSeriesWriter< itkImageType, ImageType2D>  WriterType;
 
 		std::vector<std::string> filenames;
-
-		for (int i = 1; i <= itkImage->GetLargestPossibleRegion().GetSize()[2]; i++)
+		int zSize = itkImage->GetLargestPossibleRegion().GetSize()[2];
+		if (zSize > 1000)
 		{
-			std::string filename = directory;
-			filename += _filename;
-			filename += std::to_string(i);
-			filename += ".dcm";
+			filenames.push_back(directory + _filename);
+		}
+		else
+		{
+			for (int i = 1; i <= itkImage->GetLargestPossibleRegion().GetSize()[2]; i++)
+			{
+				std::string filename = directory;
+				filename += _filename;
+				filename += std::to_string(i);
+				filename += ".dcm";
 
-			filenames.push_back(filename);
+				filenames.push_back(filename);
+			}
 		}
 
 		WriterType::Pointer writer = WriterType::New();
