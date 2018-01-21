@@ -19,22 +19,18 @@
 
 namespace LevelSet
 {
-	OutputImageType2D::Pointer runLevelSet2D(const std::string inputFileName, LevelSet::ReaderType2D::Pointer readerMask, const std::string outputFileName, const std::string outputDirectory, const double sigma, const int alpha, const int beta, const double propagationScaling, const double curvaturScaling, const double advectionScaling, const double numberOfIterations)
+	OutputImageType2D::Pointer runLevelSet2D(LevelSet::ReaderType2D::Pointer readerImage, LevelSet::ReaderType2D::Pointer readerMask, const std::string outputFileName, const std::string outputDirectory, const double sigma, const int alpha, const int beta, const double propagationScaling, const double curvaturScaling, const double advectionScaling, const double numberOfIterations)
 	{	
-
-		ReaderType2D::Pointer reader = ReaderType2D::New();
-		reader->SetFileName(inputFileName);
-		reader->Update();
-
-
-		InputImageType2D::Pointer smoothedImageData = Denoising::bilateralFilterTemplate<InputImageType2D>(reader->GetOutput(), 2, 100);
+		// smooth the input image
+		InputImageType2D::Pointer smoothedImageData = Denoising::bilateralFilterTemplate<InputImageType2D>(readerImage->GetOutput(), 2, 100);
+		
+		// calculates the edge potential map of the input image
 		typedef  itk::GradientMagnitudeRecursiveGaussianImageFilter< InputImageType2D, InputImageType2D > GradientFilterType;
 		GradientFilterType::Pointer  gradientMagnitude = GradientFilterType::New();
 		gradientMagnitude->SetSigma(sigma);		
 		gradientMagnitude->SetInput(smoothedImageData);
 
-		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType2D>(gradientMagnitude->GetOutput()));
-
+		// 
 		typedef  itk::SigmoidImageFilter< InputImageType2D, InputImageType2D > SigmoidFilterType2D;
 		SigmoidFilterType2D::Pointer sigmoid = SigmoidFilterType2D::New();
 		sigmoid->SetOutputMinimum(0.0);
@@ -49,8 +45,6 @@ namespace LevelSet
 		//  determination of an initial level set. We could have used the
 		//  \doxygen{DanielssonDistanceMapImageFilter} in the same way.
 
-
-		//SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<InputImageType2D>(sigmoid->GetOutput()));
 		typedef  itk::FastMarchingImageFilter< InputImageType2D, InputImageType2D > FastMarchingFilterType;
 		FastMarchingFilterType::Pointer  fastMarching = FastMarchingFilterType::New();
 
@@ -63,11 +57,8 @@ namespace LevelSet
 		geodesicActiveContour->SetNumberOfIterations(numberOfIterations);
 		geodesicActiveContour->SetInput(fastMarching->GetOutput());
 		geodesicActiveContour->SetFeatureImage(sigmoid->GetOutput());
-			
-
 
 		typedef itk::BinaryThresholdImageFilter< InputImageType2D, OutputImageType2D > ThresholdingFilterType;
-
 		ThresholdingFilterType::Pointer thresholder = ThresholdingFilterType::New();
 		thresholder->SetLowerThreshold(-1000.0);
 		thresholder->SetUpperThreshold(0.0);
@@ -77,13 +68,7 @@ namespace LevelSet
 
 		typedef FastMarchingFilterType::NodeContainer  NodeContainer;
 		typedef FastMarchingFilterType::NodeType       NodeType;
-
-		/* TODO: calculate seed points with mask and inter_image
-		for that calculate middlepoint pixel of image mask
-		setze den setValue auf den Wert der Distanz zwischen seedPoint und wirklicher Kontur, dafuer muss aus
-		der Maske die Kontur berechnet werden und der durchschnittliche Abstand von vorher berechnetem seedPoint
-		zu Kontur berechnet werden
-		*/
+		
 		//	Note that here we assign the value of minus the
 		//  user-provided distance to the unique node of the seeds passed to the
 		//  FastMarchingImageFilter. In this way, the value will increment
@@ -126,7 +111,7 @@ namespace LevelSet
 		WriterType2D::Pointer writer4 = WriterType2D::New();
 
 
-		caster1->SetInput(reader->GetOutput());
+		caster1->SetInput(readerImage->GetOutput());
 		writer1->SetInput(caster1->GetOutput());
 		writer1->SetFileName(outputDirectory + "GeodesicActiveContourImageFilterOutput1.dcm");
 		caster1->SetOutputMinimum(itk::NumericTraits< OutputPixelType2D >::min());
@@ -149,7 +134,7 @@ namespace LevelSet
 
 
 		fastMarching->SetOutputSize(
-			reader->GetOutput()->GetBufferedRegion().GetSize());
+			readerImage->GetOutput()->GetBufferedRegion().GetSize());
 
 	
 

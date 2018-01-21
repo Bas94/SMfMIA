@@ -19,6 +19,10 @@
 #include "fileHelpers/DICOMLoaderVTK.h"
 #include "Helpers/Validator.h"
 #include "fileHelpers/WriteDCM.h"
+
+
+
+
 int main(int argc, char* argv[])
 {
 	int sigma = 1, alpha = 1, beta = 1;
@@ -63,28 +67,35 @@ int main(int argc, char* argv[])
 		filename += ".dcm";
 	}
 		
-		LevelSet::ReaderType2D::Pointer readerMask = LevelSet::ReaderType2D::New();
-		readerMask->SetFileName(inputMaskFileName + filename);
-		readerMask->Update();
+	// read in the preoperative mask
+	LevelSet::ReaderType2D::Pointer readerMask = LevelSet::ReaderType2D::New();
+	readerMask->SetFileName(inputMaskFileName + filename);
+	readerMask->Update();
 
-		outputMask = LevelSet::runLevelSet2D(inputFileName + filename, readerMask, outputFileName + filename, outputDirectory, sigma, alpha, beta, propagationScaling, curvaturScaling, advectionScaling, numberOfIterations);
+	// read in the intraoperative image
+	LevelSet::ReaderType2D::Pointer reader = LevelSet::ReaderType2D::New();
+	reader->SetFileName(inputFileName + filename);
+	reader->Update();
 
-		typedef itk::RescaleIntensityImageFilter<LevelSet::OutputImageType2D, MaskType2D > CastFilterTypeOutputToInput;
+	// calculates the mask with level set algorithm
+	outputMask = LevelSet::runLevelSet2D(reader, readerMask, outputFileName + filename, outputDirectory, sigma, alpha, beta, propagationScaling, curvaturScaling, advectionScaling, numberOfIterations);
 
-		CastFilterTypeOutputToInput::Pointer caster = CastFilterTypeOutputToInput::New();
-		caster->SetInput(outputMask);
-		caster->Update();
+	typedef itk::RescaleIntensityImageFilter<LevelSet::OutputImageType2D, MaskType2D > CastFilterTypeOutputToInput;
+	CastFilterTypeOutputToInput::Pointer caster = CastFilterTypeOutputToInput::New();
+	caster->SetInput(outputMask);
+	caster->Update();
 
-		typedef itk::RescaleIntensityImageFilter<LevelSet::InputImageType2D, MaskType2D > CastFilterTypeOutputToInputGround;
-
-		CastFilterTypeOutputToInputGround::Pointer caster2 = CastFilterTypeOutputToInputGround::New();
-		caster2->SetInput(readerMask->GetOutput());
-		caster2->Update();
-
-		double test = Validator::diceCoeff2DSlice(caster->GetOutput(), caster2->GetOutput());
+	typedef itk::RescaleIntensityImageFilter<LevelSet::InputImageType2D, MaskType2D > CastFilterTypeOutputToInputGround;
+	CastFilterTypeOutputToInputGround::Pointer caster2 = CastFilterTypeOutputToInputGround::New();
+	caster2->SetInput(readerMask->GetOutput());
+	caster2->Update();
 	
-		std::cout << "Dicecoeff: " << test << std::endl;
-		writeDCMSeries<LevelSet::OutputImageType2D>(outputMask, outputFileName + filename, outputDirectory);
+	//calculates the dicecoefficient
+	double dicecoeff = Validator::diceCoeff2DSlice(caster->GetOutput(), caster2->GetOutput());
+	
+	std::cout << "Dicecoeff: " << dicecoeff << std::endl;
+	
+	writeDCMSeries<LevelSet::OutputImageType2D>(outputMask, outputFileName + filename, outputDirectory);
 	
 	SMfMIAImageViewer::Show(Converter::ConvertITKToVTK<LevelSet::OutputImageType2D>(outputMask));
 
